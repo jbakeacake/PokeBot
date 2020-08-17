@@ -37,7 +37,7 @@ Once your bot is in your server and you've completed the `appsettings.json` file
 
 > **Commands**
 
-Here's a list of commands you use:
+Here's a list of commands you can use:
 - !catch : Captures the current wandering Pokemon. Is succesful if you are the first user to send the command.
 - !inventory : Displays a list of all the Pokemon you've caught.
 
