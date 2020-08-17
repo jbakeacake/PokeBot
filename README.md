@@ -5,8 +5,9 @@ A Discord Pokemon bot that sporadically displays Pokemon throughout the day. Any
 > **Pre-Setup**
 
 Before running the bot, there's a couple of things that need to be set up in order to get your own bot up and running. If you don't have your own
-Discord Bot set up, take a look at this article on [how to make a Discord Bot](https://www.digitaltrends.com/gaming/how-to-make-a-discord-bot/) -- follow this guide up to
-step 4. Make sure you know where to find your bot's `Token` before moving on. Additionally,to protect your bot from being abused on your server make sure you keep you
+Discord Bot set up, take a look at this article on [how to make a Discord Bot](https://www.digitaltrends.com/gaming/how-to-make-a-discord-bot/) -- follow this guide's steps
+from **step 2** to **step 4**. Make sure you know where to find your bot's `Token` before moving on. Additionally,to protect your bot 
+from being abused on your server make sure you keep your `Token` secret, and hidden from the public.
 
 
 > **Configuring our App Settings**
@@ -33,6 +34,12 @@ text channel on your server).
 > **Running the Application**
 
 Once your bot is in your server and you've completed the `appsettings.json` file, you're free to run the command `dotnet run` to launch the application!
+
+> **Commands**
+
+Here's a list of commands you can use:
+- !catch : Captures the current wandering Pokemon. Is succesful if you are the first user to send the command.
+- !inventory : Displays a list of all the Pokemon you've caught.
 
 ## Dependencies
 - [Discord .Net v2.2.0](https://github.com/discord-net/Discord.Net)
