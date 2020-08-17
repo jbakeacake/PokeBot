@@ -29,6 +29,20 @@ namespace Pokebot
             _config = BuildConfig();
 
             var services = ConfigureServices();
+            
+            using (var scope = services.CreateScope())
+            {
+                var serviceProvider = scope.ServiceProvider;
+                try
+                {
+                    var context = serviceProvider.GetRequiredService<DataContext>();
+                    context.Database.Migrate();
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine(ex.Message);
+                }
+            }
 
             services.GetRequiredService<LogService>();
             services.GetRequiredService<PokemonHandlingService>().Initialize(services);

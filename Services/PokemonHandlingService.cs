@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PokeBot.Controllers;
 using PokeBot.Dtos;
@@ -21,16 +23,18 @@ namespace PokeBot.Services
         private UserController _userController;
         private System.Threading.Timer _timer;
         private readonly int MIN_MINUTE_INTERVAL = 1;
-        private readonly int MAX_MINUTE_INTERVAL = 60;
+        private readonly int MAX_MINUTE_INTERVAL = 40;
         private int _period;
+        private ulong _channelId;
 
-        public PokemonHandlingService(DiscordSocketClient discord, IServiceProvider provider)
+        public PokemonHandlingService(DiscordSocketClient discord, IServiceProvider provider, IConfiguration config)
         {
             _discord = discord;
             _provider = provider;
             _cache = provider.GetRequiredService<PokeCache>();
             _pokeController = provider.GetRequiredService<PokemonController>();
             _userController = provider.GetRequiredService<UserController>();
+            _channelId = config.GetValue<ulong>("AppSettings:ChannelId");
 
             _discord.Ready += SendPokemonAppearance;
         }
@@ -46,8 +50,7 @@ namespace PokeBot.Services
             var minutesUntilAppearance = rand.Next(MIN_MINUTE_INTERVAL, MAX_MINUTE_INTERVAL);
             int dueTime = 1000 * 60 * 10; // initial 10 minutes
             _period = 1000 * 60 * minutesUntilAppearance;
-            // System.Console.WriteLine($"Initial Period: {_period / (1000*60)}");
-            _timer = new System.Threading.Timer(DisplayPokemon, null, dueTime, (_period));
+            _timer = new System.Threading.Timer(DisplayPokemon, null, dueTime, _period);
             await Task.CompletedTask;
         }
 
@@ -57,10 +60,8 @@ namespace PokeBot.Services
             var newMinutes = rand.Next(MIN_MINUTE_INTERVAL, MAX_MINUTE_INTERVAL + 1);
             _period = 1000 * 60 * newMinutes;
             Console.WriteLine($"Logging next Pokemon in {newMinutes}...");
-            // var guild = GetRandomGuild();
-            // var channels = guild.TextChannels;
-            // var channel = channels.OrderBy(x => x.Id).First() as ISocketMessageChannel;
-            var channel = _discord.GetChannel(744706023520206979) as ISocketMessageChannel;
+
+            var channel = _discord.GetChannel(_channelId) as ISocketMessageChannel;
 
             var pokemon = await _cache.GetPokemon();
             var cwp = _provider.GetRequiredService<CurrentWanderingPokemon>();
@@ -74,8 +75,8 @@ namespace PokeBot.Services
 
         private Embed CreateEmbeddedMessage(PokemonForReturnDto pokemon)
         {
-            var upperRule = "╔═══════════════════";
-            var lowerRule = "╚═══════════════════";
+            var upperRule = "╔═════════════════";
+            var lowerRule = "╚═════════════════";
 
             var embeddedMessage = new EmbedBuilder()
                 .WithAuthor(_discord.CurrentUser)
