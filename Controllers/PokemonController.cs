@@ -13,13 +13,28 @@ namespace PokeBot.Controllers
         private readonly int ID_RANGE = 151;
         private readonly string PokeApiUrl = "https://pokeapi.co/api/v2/pokemon/";
         private readonly string PokeBastionBotApiUrl = "https://pokeres.bastionbot.org/images/pokemon/";
+        private readonly IPokeBotRepository _repo;
         private readonly IMapper _mapper;
-        public PokemonController(IMapper mapper)
+        public PokemonController(IPokeBotRepository repo, IMapper mapper)
         {
+            _repo = repo;
             _mapper = mapper;
         }
 
-        public async Task<PokemonForReturnDto> GetPokemon(int pokeId)
+        public async Task<PokemonForReturnDto> GetPokemon(int id)
+        {
+            var pokemonFromRepo = await _repo.GetPokemon(id);
+            var pokemonForReturnDto = _mapper.Map<PokemonForReturnDto>(pokemonFromRepo);
+            return pokemonForReturnDto;
+        }
+        public async Task<PokemonForReturnDto> GetPokemonByPokeId(int pokeId)
+        {
+            var pokemonFromRepo = await _repo.GetPokemonByPokeId(pokeId);
+            var pokemonForReturnDto =_mapper.Map<PokemonForReturnDto>(pokemonFromRepo);
+            return pokemonForReturnDto;
+        }
+
+        public async Task<PokemonForReturnDto> GetPokemonAPI(int pokeId)
         {
             var pokeDataUrl = PokeApiUrl + pokeId;
             var pokePhotoUrl = PokeBastionBotApiUrl + pokeId + ".png";
@@ -56,7 +71,12 @@ namespace PokeBot.Controllers
         {
             Random rand = new Random();
             int randomId = rand.Next(1, ID_RANGE + 1);
-            return await GetPokemon(randomId);
+            return await GetPokemonAPI(randomId);
+        }
+
+        public async Task<bool> PokemonExists(int pokeId)
+        {
+            return await _repo.PokemonExists(pokeId);
         }
     }
 }

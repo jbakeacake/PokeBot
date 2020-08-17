@@ -5,10 +5,10 @@ using PokeBot.Models;
 
 namespace PokeBot.Data
 {
-    public class UserRepository : IUserRepository
+    public class PokeBotRepository : IPokeBotRepository
     {
         private readonly DataContext _context;
-        public UserRepository(DataContext context)
+        public PokeBotRepository(DataContext context)
         {
             _context = context;
         }
@@ -26,6 +26,18 @@ namespace PokeBot.Data
         {
             var user = await _context.Users_Tbl.Include(x => x.PokeCollection).FirstOrDefaultAsync(x => x.Id == id);
             return user;
+        }
+
+        public async Task<Pokemon> GetPokemon(int id)
+        {
+            var pokemon = await _context.Pokemon_Tbl.FirstOrDefaultAsync(x => x.Id == id);
+            return pokemon;
+        }
+
+        public async Task<Pokemon> GetPokemonByPokeId(int pokeId)
+        {
+            var pokemon = await _context.Pokemon_Tbl.FirstOrDefaultAsync(x => x.PokeId == pokeId);
+            return pokemon;
         }
 
         public async Task<User> GetUserByDiscordId(ulong discordId)
@@ -48,6 +60,11 @@ namespace PokeBot.Data
         public async Task<bool> UserExists(ulong discordId)
         {
             return await _context.Users_Tbl.AnyAsync(x => x.DiscordId == discordId);
+        }
+
+        public async Task<bool> PokemonExists(int pokeId)
+        {
+            return await _context.Pokemon_Tbl.AnyAsync(x => x.PokeId == pokeId);
         }
     }
 }

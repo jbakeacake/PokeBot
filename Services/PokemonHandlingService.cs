@@ -23,8 +23,7 @@ namespace PokeBot.Services
         private UserController _userController;
         private System.Threading.Timer _timer;
         private readonly int MIN_MINUTE_INTERVAL = 1;
-        private readonly int MAX_MINUTE_INTERVAL = 40;
-        private int _period;
+        private readonly int MAX_MINUTE_INTERVAL = 60;
         private ulong _channelId;
 
         public PokemonHandlingService(DiscordSocketClient discord, IServiceProvider provider, IConfiguration config)
@@ -48,9 +47,10 @@ namespace PokeBot.Services
         {
             Random rand = new Random();
             var minutesUntilAppearance = rand.Next(MIN_MINUTE_INTERVAL, MAX_MINUTE_INTERVAL);
-            int dueTime = 1000 * 60 * 10; // initial 10 minutes
-            _period = 1000 * 60 * minutesUntilAppearance;
-            _timer = new System.Threading.Timer(DisplayPokemon, null, dueTime, _period);
+            int dueTime = 1000 * 60 * 5; // initial 5 minutes
+            int period = 1000 * 60 * minutesUntilAppearance;
+            System.Console.WriteLine($"Initial DueTime: {5} \nInitial Period: {minutesUntilAppearance}");
+            _timer = new System.Threading.Timer(DisplayPokemon, null, dueTime, period);
             await Task.CompletedTask;
         }
 
@@ -58,12 +58,15 @@ namespace PokeBot.Services
         {
             Random rand = new Random();
             var newMinutes = rand.Next(MIN_MINUTE_INTERVAL, MAX_MINUTE_INTERVAL + 1);
-            _period = 1000 * 60 * newMinutes;
+            var newPeriod = 1000 * 60 * newMinutes;
+            System.Console.WriteLine($"New Period: {newPeriod / (60*1000)}");
+            _timer.Change(newPeriod , newPeriod);
             Console.WriteLine($"Logging next Pokemon in {newMinutes}...");
 
             var channel = _discord.GetChannel(_channelId) as ISocketMessageChannel;
 
             var pokemon = await _cache.GetPokemon();
+
             var cwp = _provider.GetRequiredService<CurrentWanderingPokemon>();
             cwp.SetPokemon(pokemon);
             cwp.SetIsCaptured(false);
@@ -75,13 +78,13 @@ namespace PokeBot.Services
 
         private Embed CreateEmbeddedMessage(PokemonForReturnDto pokemon)
         {
-            var upperRule = "╔═════════════════";
-            var lowerRule = "╚═════════════════";
+            var upperRule = "═════════════════╗";
+            var lowerRule = "═════════════════╝";
 
             var embeddedMessage = new EmbedBuilder()
                 .WithAuthor(_discord.CurrentUser)
                 .WithTitle("A Pokemon Wanders Through this Channel...")
-                .WithDescription($"{upperRule} \n║ A wild `{pokemon.Name}` appears!\n{lowerRule} \n\n Type `!catch` to capture it!")
+                .WithDescription($"{upperRule} \nA wild `{pokemon.Name}` appears!\n{lowerRule} \n\n Type `!catch` to capture it!")
                 .WithImageUrl(pokemon.Url)
                 .WithFooter(footer => footer.Text = "Appeared ")
                 .WithCurrentTimestamp()

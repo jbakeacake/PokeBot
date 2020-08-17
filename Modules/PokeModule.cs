@@ -12,12 +12,12 @@ using PokeBot.Services.Helpers;
 
 namespace PokeBot.Modules
 {
-    public class InfoModule : ModuleBase<SocketCommandContext>
+    public class PokeModule : ModuleBase<SocketCommandContext>
     {
         public UserController _controller { get; set; }
         public DiscordSocketClient _discord { get; set; }
         public IServiceProvider _provider { get; set; }
-        public InfoModule(IServiceProvider provider, DiscordSocketClient discord, UserController controller)
+        public PokeModule(IServiceProvider provider, DiscordSocketClient discord, UserController controller)
         {
             _discord = discord;
             _controller = controller;

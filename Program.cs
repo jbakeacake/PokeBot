@@ -37,6 +37,14 @@ namespace Pokebot
                 {
                     var context = serviceProvider.GetRequiredService<DataContext>();
                     context.Database.Migrate();
+                    await context.Pokemon_Tbl.ForEachAsync(x => {
+                        if(String.IsNullOrEmpty(x.Url))
+                        {
+                            x.Url = $"https://pokeres.bastionbot.org/images/pokemon/{x.PokeId}.png";
+                            System.Console.WriteLine($"Updated to {x.Url}");
+                        }
+                    });
+                    await context.SaveChangesAsync();
                 }
                 catch (Exception ex)
                 {
@@ -62,11 +70,11 @@ namespace Pokebot
                 .AddSingleton<CommandHandlingService>()
                 .AddSingleton<PokemonHandlingService>()
                 .AddSingleton(_config)
-                .AddAutoMapper(typeof(UserRepository).Assembly)
+                .AddAutoMapper(typeof(PokeBotRepository).Assembly)
                 .AddLogging()
                 .AddSingleton<LogService>()
                 .AddDbContext<DataContext>(x => x.UseSqlite(_config.GetConnectionString("DefaultConnection")))
-                .AddScoped<IUserRepository, UserRepository>()
+                .AddScoped<IPokeBotRepository, PokeBotRepository>()
                 .AddScoped<UserController>()
                 .AddScoped<PokemonController>()
                 .BuildServiceProvider();
