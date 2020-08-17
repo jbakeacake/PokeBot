@@ -35,6 +35,12 @@ text channel on your server).
 
 Once your bot is in your server and you've completed the `appsettings.json` file, you're free to run the command `dotnet run` to launch the application!
 
+> **Commands**
+
+Here's a list of commands you use:
+- !catch : Captures the current wandering Pokemon. Is succesful if you are the first user to send the command.
+- !inventory : Displays a list of all the Pokemon you've caught.
+
 ## Dependencies
 - [Discord .Net v2.2.0](https://github.com/discord-net/Discord.Net)
 
