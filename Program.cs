@@ -42,6 +42,7 @@ namespace Pokebot
         private IServiceProvider ConfigureServices()
             => new ServiceCollection()
                 .AddSingleton(_client)
+                .AddSingleton<PokeCache>()
                 .AddSingleton<CurrentWanderingPokemon>()
                 .AddSingleton<CommandService>()
                 .AddSingleton<CommandHandlingService>()

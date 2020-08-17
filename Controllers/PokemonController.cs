@@ -19,12 +19,10 @@ namespace PokeBot.Controllers
             _mapper = mapper;
         }
 
-        public async Task<PokemonForReturnDto> GetRandomPokemon()
+        public async Task<PokemonForReturnDto> GetPokemon(int pokeId)
         {
-            Random rand = new Random();
-            int randomId = rand.Next(1, ID_RANGE + 1);
-            var pokeDataUrl = PokeApiUrl + randomId;
-            var pokePhotoUrl = PokeBastionBotApiUrl + randomId + ".png";
+            var pokeDataUrl = PokeApiUrl + pokeId;
+            var pokePhotoUrl = PokeBastionBotApiUrl + pokeId + ".png";
             PokemonForReturnDto pokemonForReturnDto = null;
             try
             {
@@ -39,7 +37,7 @@ namespace PokeBot.Controllers
                             if (pokemonData == null) throw new NullReferenceException("PokeAPI call returned null. Check Pokemon Id or base URL being used.");
 
                             var dataObj = JObject.Parse(pokemonData);
-                            pokemonForReturnDto = new PokemonForReturnDto(randomId, dataObj["name"].ToString(), pokePhotoUrl);
+                            pokemonForReturnDto = new PokemonForReturnDto(pokeId, dataObj["name"].ToString(), pokePhotoUrl);
                         }
                     }
                 }
@@ -49,9 +47,16 @@ namespace PokeBot.Controllers
                 Console.WriteLine("Exception: {0}", ex.Message);
             }
 
-            if(pokemonForReturnDto == null) throw new NullReferenceException("PokemonForReturnDto is null. Check API call.");
+            if (pokemonForReturnDto == null) throw new NullReferenceException("PokemonForReturnDto is null. Check API call.");
 
             return pokemonForReturnDto;
+        }
+
+        public async Task<PokemonForReturnDto> GetRandomPokemon()
+        {
+            Random rand = new Random();
+            int randomId = rand.Next(1, ID_RANGE + 1);
+            return await GetPokemon(randomId);
         }
     }
 }
