@@ -6,8 +6,8 @@ A Discord Pokemon bot that sporadically displays Pokemon throughout the day. Any
 
 Before running the bot, there's a couple of things that need to be set up in order to get your own bot up and running. If you don't have your own
 Discord Bot set up, take a look at this article on [how to make a Discord Bot](https://www.digitaltrends.com/gaming/how-to-make-a-discord-bot/) -- follow this guide's steps
-from step 2 to step 4. Make sure you know where to find your bot's `Token` before moving on. Additionally,to protect your bot from being abused on your server make sure you keep your
-`Token` secret, and hidden from the public.
+from **step 2** to **step 4**. Make sure you know where to find your bot's `Token` before moving on. Additionally,to protect your bot 
+from being abused on your server make sure you keep your `Token` secret, and hidden from the public.
 
 
 > **Configuring our App Settings**
