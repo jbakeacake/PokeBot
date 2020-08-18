@@ -3,3 +3,5 @@ bin
 .vscode
 appsettings.json
 Procfile
+pokebot.db
+*.db
