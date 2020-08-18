@@ -57,8 +57,10 @@ namespace PokeBot.Services
         private async void DisplayPokemon(object state)
         {
             Random rand = new Random();
+            
             var newMinutes = rand.Next(MIN_MINUTE_INTERVAL, MAX_MINUTE_INTERVAL + 1);
             var newPeriod = 1000 * 60 * newMinutes;
+
             System.Console.WriteLine($"New Period: {newPeriod / (60*1000)}");
             _timer.Change(newPeriod , newPeriod);
             Console.WriteLine($"Logging next Pokemon in {newMinutes}...");

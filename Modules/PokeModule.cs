@@ -37,9 +37,9 @@ namespace PokeBot.Modules
             if (!(await _controller.UserExists(user.Id)))
                 await RegisterUser(user);
 
-            PokemonForCreationDto pokemonForCreation = new PokemonForCreationDto(cwp._pokemon.PokeId, cwp._pokemon.Name);
+            PokemonForCreationDto pokemonForCreation = new PokemonForCreationDto(cwp._pokemon.PokeId, cwp._pokemon.Name, cwp._pokemon.Url);
             cwp.SetIsCaptured(true);
-            
+
             await _controller.AddToUserPokeCollectionByDiscordId(user.Id, pokemonForCreation);
             await ReplyAsync($":medal: Congratulations, {user.Username}! You've successfully caught a `{cwp._pokemon.Name}`.\n\nType `!inventory` to see it in your inventory!");
         }

@@ -5,7 +5,6 @@ namespace PokeBot.Dtos
         public int PokeId { get; set; }
         public string Name { get; set; }
         public string Url { get; set; }
-
         public PokemonForReturnDto() {}
         public PokemonForReturnDto(int pokeId, string name, string url)
         {
