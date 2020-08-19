@@ -18,6 +18,15 @@ namespace PokeBot.Helpers
             CreateMap<PokemonForReturnDto, Pokemon>();
 
             CreateMap<PokemonForCreationDto, Pokemon>();
+
+            CreateMap<PokemonData, PokemonDataForReturnDto>();
+            CreateMap<MoveData, MoveDataForReturnDto>();
+            CreateMap<MoveLink, MoveLinkForReturnDto>();
+
+            CreateMap<PokemonDataForCreationDto, PokemonData>();
+            CreateMap<MoveDataForCreationDto, MoveData>();
+            CreateMap<MoveLinkForCreationDto, MoveLink>();
+
         }
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -48,6 +49,71 @@ namespace PokeBot.Data
         public async Task<bool> UserExists(ulong discordId)
         {
             return await _context.Users_Tbl.AnyAsync(x => x.DiscordId == discordId);
+        }
+
+        public async Task<bool> PokemonExists(int pokeId)
+        {
+            return await _context.Pokemon_Tbl.AnyAsync(x => x.PokeId == pokeId);
+        }
+
+        public Task<PokemonData> GetPokemonData(int id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<PokeBattleData> GetPokeBattleData(int id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<MoveData> GetMoveData(int id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<MoveData> GetMoveDataByMoveId(int moveId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<PokeBattleData> GetPokeBattleDataByGUID(Guid battleId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<PokemonData> GetPokemonDataByPokeId(int pokeId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IEnumerable<MoveData>> GetMoves()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IEnumerable<PokemonData>> GetPokemonDatas()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IEnumerable<PokeBattleData>> GetPokeBattles()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> MoveExists(int moveId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Pokemon> GetPokemon(int id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Pokemon> GetPokemonByPokeId(int pokeId)
+        {
+            throw new NotImplementedException();
         }
     }
 }

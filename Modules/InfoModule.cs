@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using Discord.Webhook;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using PokeBot.Controllers;
@@ -62,8 +63,23 @@ namespace PokeBot.Modules
             message += $":ballot_box:`POKE STORAGE | Unique Pokemon Found: {inventory.Keys.Count} / 151`\n";
             message += InventoryToString(inventory);
 
-            await ReplyAsync(message);
+            var res = await ReplyAsync(message);
         }
+
+        // [Command("test")]
+        // public async Task Test()
+        // {
+        //     var msg = CreateEmbeddedMessage();
+        //     var res = await Context.Channel.SendMessageAsync(embed: msg);
+        //     var move_1 = new Emoji("1️⃣");
+        //     var move_2 = new Emoji("2️⃣");
+        //     var move_3 = new Emoji("3️⃣");
+        //     var move_4 = new Emoji("4️⃣");
+        //     await res.AddReactionAsync(move_1);
+        //     await res.AddReactionAsync(move_2);
+        //     await res.AddReactionAsync(move_3);
+        //     await res.AddReactionAsync(move_4);
+        // }
 
         private Dictionary<string, int> GetInventory(UserForReturnDto userData)
         {
@@ -86,7 +102,7 @@ namespace PokeBot.Modules
         private string InventoryToString(Dictionary<string, int> inventory)
         {
             var message = "```";
-            foreach (var record in inventory)
+            foreach (var record in inventory.OrderBy(r => r.Key))
             {
                 message += $"{record.Key} | x{record.Value} \n";
             }
@@ -99,6 +115,43 @@ namespace PokeBot.Modules
         {
             await _controller.RegisterUser(user.Id, user.Username);
             System.Console.WriteLine($"Registered user {user.Username}");
+        }
+
+        private Embed CreateEmbeddedMessage()
+        {
+            var fieldOne = new EmbedFieldBuilder()
+                .WithName("`█████████`")
+                .WithValue("`Ditto: Lvl 1`\n\n");
+            var fieldEmpty1 = new EmbedFieldBuilder()
+                .WithName(".")
+                .WithValue(".");
+            var fieldEmpty2 = new EmbedFieldBuilder()
+                .WithName(".")
+                .WithValue(".");
+            var fieldEmpty3 = new EmbedFieldBuilder()
+                .WithName(".")
+                .WithIsInline(true)
+                .WithValue(".");
+            var fieldEmpty4 = new EmbedFieldBuilder()
+                .WithName(".")
+                .WithIsInline(true)
+                .WithValue(".");
+            var fieldTwo = new EmbedFieldBuilder()
+                .WithIsInline(true)
+                .WithName("`████`")
+                .WithValue("`Ditto: Lvl 1`");
+            
+            var moves = "▄▄▄▄▄▄▄▄▄▄▄\n\n►► Moves ◄◄\n║ 1.) Bingo\n║ 2.) Bango\n║ 3.) Bongo\n║ 4.) Bish";
+
+
+            var embeddedMessage = new EmbedBuilder()
+                .WithFields(new[] { fieldOne, fieldEmpty1, fieldEmpty2, fieldEmpty3, fieldEmpty4, fieldTwo })
+                .WithFooter(footer => footer.Text = moves)
+                .WithThumbnailUrl("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/132.png")
+                .WithImageUrl("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/132.png")
+                .Build();
+
+            return embeddedMessage;
         }
     }
 }

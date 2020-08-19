@@ -34,6 +34,7 @@ namespace PokeBot.Services.Helpers
             {
                 System.Console.WriteLine("Querying PokeAPI...");
                 pokemonToReturn = await _pokemonController.GetPokemon(pokeId);
+                System.Console.WriteLine("Query Success!");
             }
             return pokemonToReturn; 
         }
