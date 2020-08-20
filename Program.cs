@@ -38,6 +38,7 @@ namespace Pokebot
                 {
                     var context = serviceProvider.GetRequiredService<DataContext>();
                     context.Database.Migrate();
+                    await Seed.SeedRandomStats(context);
                 }
                 catch (Exception ex)
                 {
@@ -45,11 +46,11 @@ namespace Pokebot
                 }
             }
 
-            services.GetRequiredService<LogService>();
-            services.GetRequiredService<PokemonHandlingService>().Initialize(services);
-            await services.GetRequiredService<CommandHandlingService>().InitializeAsync(services);
-            await _client.LoginAsync(TokenType.Bot, _config.GetSection("AppSettings:Token").Value);
-            await _client.StartAsync();
+            // services.GetRequiredService<LogService>();
+            // services.GetRequiredService<PokemonHandlingService>().Initialize(services);
+            // await services.GetRequiredService<CommandHandlingService>().InitializeAsync(services);
+            // await _client.LoginAsync(TokenType.Bot, _config.GetSection("AppSettings:Token").Value);
+            // await _client.StartAsync();
 
             await Task.Delay(-1);
         }
@@ -63,11 +64,11 @@ namespace Pokebot
                 .AddSingleton<CommandHandlingService>()
                 .AddSingleton<PokemonHandlingService>()
                 .AddSingleton(_config)
-                .AddAutoMapper(typeof(UserRepository).Assembly)
+                .AddAutoMapper(typeof(PokeRepository).Assembly)
                 .AddLogging()
                 .AddSingleton<LogService>()
                 .AddDbContext<DataContext>(x => x.UseSqlite(_config.GetConnectionString("DefaultConnection")))
-                .AddScoped<IUserRepository, UserRepository>()
+                .AddScoped<IPokeRepository, PokeRepository>()
                 .AddScoped<UserController>()
                 .AddScoped<PokemonController>()
                 .BuildServiceProvider();

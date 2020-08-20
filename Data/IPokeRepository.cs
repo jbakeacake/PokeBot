@@ -5,7 +5,7 @@ using PokeBot.Models;
 
 namespace PokeBot.Data
 {
-    public interface IUserRepository
+    public interface IPokeRepository
     {
         void Add<T>(T entity) where T : class;
         void Delete<T>(T entity) where T : class;

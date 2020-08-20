@@ -9,6 +9,7 @@ namespace PokeBot.Models
         public int PokeId { get; set; }
         public float Base_Experience { get; set; }
         public ICollection<MoveLink> MoveLinks { get; set; }
+        public string BastionUrl { get; set; }
         public string BackSpriteUrl { get; set; }
         public string FrontSpriteUrl { get; set; }
         public float MaxHP { get; set; }

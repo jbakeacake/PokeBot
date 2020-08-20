@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using PokeBot.Data;
 using PokeBot.Dtos;
@@ -25,7 +26,7 @@ namespace PokeBot.Helpers
                 cfg.CreateMap<PokemonDataForCreationDto, PokemonData>();
             });
             var mapper = new Mapper(config);
-            if (!context.PokeData_Tbl.Any())
+            if (!(context.PokeData_Tbl.Any()))
             {
                 for (int i = 1; i <= POKEDATA_ID_RANGE; i++)
                 {
@@ -37,6 +38,55 @@ namespace PokeBot.Helpers
             }
 
             return await context.SaveChangesAsync() > 0;
+        }
+
+        public static async Task<bool> SeedRandomStats(DataContext context)
+        {
+            var usersPokemon = context.Pokemon_Tbl.ToList();
+            foreach(var pokemon in usersPokemon)
+            {
+                var basePokeData = await context.PokeData_Tbl.Include(p => p.MoveLinks).FirstOrDefaultAsync(x => x.PokeId == pokemon.PokeId);
+                SetStats(pokemon, basePokeData);
+                SetRandomMoveIds(pokemon, basePokeData);
+                pokemon.Level = 1.0f;
+                pokemon.Base_Experience = basePokeData.Base_Experience;
+                System.Console.WriteLine($"Assigning to {pokemon.Name}");
+            }
+
+            return await context.SaveChangesAsync() > 0;
+        }
+
+        public static void SetStats(Pokemon pokemon, PokemonData data)
+        {
+            pokemon.MaxHP = GetRandomStat(data.MaxHP);
+            pokemon.Attack = GetRandomStat(data.Attack);
+            pokemon.Defense = GetRandomStat(data.Defense);
+            pokemon.SpecialAttack = GetRandomStat(data.SpecialAttack);
+            pokemon.SpecialDefense = GetRandomStat(data.SpecialDefense);
+            pokemon.Speed = GetRandomStat(data.Speed);
+        }
+
+        public static void SetRandomMoveIds(Pokemon pokemon, PokemonData data)
+        {
+            int[] arrOfMoveIds = new int[4];
+            Random rand = new Random();
+            for(int i = 0; i < arrOfMoveIds.Length; i++)
+            {
+                var count = data.MoveLinks.Count;
+                var randomId = rand.Next(1, count);
+                arrOfMoveIds[i] = randomId;
+            }
+
+            pokemon.MoveId_One = arrOfMoveIds[0];
+            pokemon.MoveId_Two = arrOfMoveIds[1];
+            pokemon.MoveId_Three = arrOfMoveIds[2];
+            pokemon.MoveId_Four = arrOfMoveIds[3];
+        }
+
+        public static float GetRandomStat(float base_stat)
+        {
+            Random rand = new Random();
+            return base_stat + (float)(rand.Next(1, 20));
         }
 
         private static async Task<PokemonDataForCreationDto> GetPokemonDataFromAPI(int pokeId)
@@ -163,7 +213,7 @@ namespace PokeBot.Helpers
             foreach (var elem in elems)
             {
                 var moveName = elem["move"]["name"].ToString();
-                var moveRecord = (await _context.MoveData_Tbl.FirstOrDefaultAsync(x => x.Name == moveName));
+                var moveRecord = await _context.MoveData_Tbl.AsQueryable().FirstAsync();
                 if(moveRecord == null) continue;
                 var moveId = moveRecord.MoveId;
                 listToReturn.Add(new MoveLink { MoveId = moveId, PokemonDataId = pokeId });

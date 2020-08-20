@@ -9,9 +9,9 @@ namespace PokeBot.Controllers
 {
     public class UserController
     {
-        private readonly IUserRepository _repo;
+        private readonly IPokeRepository _repo;
         private readonly IMapper _mapper;
-        public UserController(IUserRepository repo, IMapper mapper)
+        public UserController(IPokeRepository repo, IMapper mapper)
         {
             _repo = repo;
             _mapper = mapper;

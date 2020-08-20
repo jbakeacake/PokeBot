@@ -6,10 +6,10 @@ using PokeBot.Models;
 
 namespace PokeBot.Data
 {
-    public class UserRepository : IUserRepository
+    public class PokeRepository : IPokeRepository
     {
         private readonly DataContext _context;
-        public UserRepository(DataContext context)
+        public PokeRepository(DataContext context)
         {
             _context = context;
         }
