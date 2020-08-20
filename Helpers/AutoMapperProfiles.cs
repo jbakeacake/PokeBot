@@ -27,6 +27,24 @@ namespace PokeBot.Helpers
             CreateMap<MoveDataForCreationDto, MoveData>();
             CreateMap<MoveLinkForCreationDto, MoveLink>();
 
+            CreateMap<PokeType, PokeTypeForReturn>()
+                .ForMember(
+                    dest => dest.Double_Damage_From,
+                    opt => opt.MapFrom(src => src.Delimited_Double_Damage_From.SplitString(','))
+                )
+                .ForMember(
+                    dest => dest.Double_Damage_To,
+                    opt => opt.MapFrom(src => src.Delimited_Double_Damage_To.SplitString(','))
+                )
+                .ForMember(
+                    dest => dest.Half_Damage_From,
+                    opt => opt.MapFrom(src => src.Delimited_Half_Damage_From.SplitString(','))
+                )
+                .ForMember(
+                    dest => dest.Half_Damage_To,
+                    opt => opt.MapFrom(src => src.Delimited_Half_Damage_To.SplitString(','))
+                );
+
         }
     }
 }

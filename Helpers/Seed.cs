@@ -16,9 +16,10 @@ namespace PokeBot.Helpers
     {
         private static readonly int POKEDATA_ID_RANGE = 151;
         private static readonly int MOVEDATA_ID_RANGE = 165;
+        private static readonly int POKETYPE_ID_RANGE = 18;
         private static readonly string PokeApiUrl = "https://pokeapi.co/api/v2/";
         private static DataContext _context;
-        public static async Task<bool> SeedData(DataContext context)
+        public static async Task<bool> SeedPokeData(DataContext context)
         {
             _context = context;
             var config = new MapperConfiguration(cfg =>
@@ -39,6 +40,20 @@ namespace PokeBot.Helpers
 
             return await context.SaveChangesAsync() > 0;
         }
+
+        public static async Task<bool> SeedPokeTypes(DataContext context)
+        {
+            if(!context.PokeType_Tbl.Any())
+            {
+                for(int i = 1; i <= POKETYPE_ID_RANGE; i++)
+                {
+                    var pokeTypeForRepo = await GetPokeTypesFromAPI(i);
+                    context.PokeType_Tbl.Add(pokeTypeForRepo);
+                    System.Console.WriteLine($"Seeding type {i}");
+                }
+            }
+            return await context.SaveChangesAsync() > 0;
+        }        
 
         public static async Task<bool> SeedRandomStats(DataContext context)
         {
@@ -87,6 +102,61 @@ namespace PokeBot.Helpers
         {
             Random rand = new Random();
             return base_stat + (float)(rand.Next(1, 20));
+        }
+        private static async Task<PokeType> GetPokeTypesFromAPI(int typeId)
+        {
+            var pokeTypeUrl = PokeApiUrl + "type/" + typeId;
+            PokeType pokeType = null;
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    using (HttpResponseMessage res = await client.GetAsync(pokeTypeUrl))
+                    {
+                        using (HttpContent content = res.Content)
+                        {
+                            var pokemonData = await content.ReadAsStringAsync();
+                            if (pokemonData == null) throw new NullReferenceException("PokeAPI call returned null. Check Pokemon Id or Url");
+
+                            var dataObj = JObject.Parse(pokemonData);
+                            var name = dataObj["name"].ToString();
+                            var delimitedDoubleDamageFrom = GetPokeTypes(dataObj["damage_relations"], "double_damage_from");
+                            var delimitedDoubleDamageTo = GetPokeTypes(dataObj["damage_relations"], "double_damage_to");
+                            var delimitedHalfDamageFrom = GetPokeTypes(dataObj["damage_relations"], "half_damage_from");
+                            var delimitedHalfDamageTo = GetPokeTypes(dataObj["damage_relations"], "half_damage_to");
+
+                            pokeType = new PokeType
+                            {
+                                Name = name,
+                                PokeTypeId = typeId,
+                                Delimited_Double_Damage_From = delimitedDoubleDamageFrom,
+                                Delimited_Double_Damage_To = delimitedDoubleDamageTo,
+                                Delimited_Half_Damage_From = delimitedHalfDamageFrom,
+                                Delimited_Half_Damage_To = delimitedHalfDamageTo
+                            };
+                        }
+                    }
+                }
+            } catch (Exception ex)
+            {
+                Console.WriteLine("Exception: {0}", ex.Message);
+            }
+
+            if(pokeType == null) throw new NullReferenceException("PokeType is null; check PokeType construction after API call");
+
+            return pokeType;
+        }
+
+        private static string GetPokeTypes(JToken jTokens, string v)
+        {
+            if(jTokens[v].Count() == 0) return "none";
+            string strToReturn = "";
+            jTokens[v].ToList().ForEach(elem => {
+                strToReturn += (elem["name"] + ",");
+            });
+            
+            strToReturn = strToReturn.Substring(0, strToReturn.Length-1); // remove trailing comma
+            return strToReturn;
         }
 
         private static async Task<PokemonDataForCreationDto> GetPokemonDataFromAPI(int pokeId)
@@ -200,6 +270,8 @@ namespace PokeBot.Helpers
 
             return moveDataForCreationDto;
         }
+
+
 
         private static bool isJtokenEmpty(JToken token)
         {

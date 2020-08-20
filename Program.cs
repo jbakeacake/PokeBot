@@ -38,7 +38,7 @@ namespace Pokebot
                 {
                     var context = serviceProvider.GetRequiredService<DataContext>();
                     context.Database.Migrate();
-                    await Seed.SeedRandomStats(context);
+                    await Seed.SeedPokeTypes(context);
                 }
                 catch (Exception ex)
                 {

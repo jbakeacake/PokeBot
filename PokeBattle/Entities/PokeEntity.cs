@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using PokeBot.Models;
 using PokeBot.PokeBattle.Common;
 using PokeBot.PokeBattle.Moves;
 using PokeBot.PokeBattle.Moves.Ailments;
@@ -11,6 +12,27 @@ namespace PokeBot.PokeBattle.Entities
         public Stats Stats { get; set; }
         public HashSet<string> WeakAgainst { get; set; } // Takes double damage from, and gives half damage to
         public HashSet<string> StrongAgainst { get; set; } // Takes half damage from, and gives double damage to
+        public PokeEntity(Pokemon pokemon)
+        {
+            Stats = MapStatsFromPokemon(pokemon);
+            WeakAgainst = GetWeaknesses(pokemon.Type);
+            StrongAgainst = GetStrengths(pokemon.Type);
+        }
+
+        private HashSet<string> GetStrengths(string type)
+        {
+            return null;
+        }
+
+        private HashSet<string> GetWeaknesses(string type)
+        {
+            throw new NotImplementedException();
+        }
+
+        private Stats MapStatsFromPokemon(Pokemon pokemon)
+        {
+            throw new NotImplementedException();
+        }
 
         public void CombatAction(ICombative other, Move move)
         {
