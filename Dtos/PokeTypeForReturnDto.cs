@@ -1,6 +1,6 @@
 namespace PokeBot.Dtos
 {
-    public class PokeTypeForReturn
+    public class PokeTypeForReturnDto
     {
         public int PokeTypeId { get; set; }
         public string Name { get; set; }

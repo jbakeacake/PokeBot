@@ -1,6 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
+using PokeBot.Dtos;
 using PokeBot.Models;
 using PokeBot.PokeBattle.Entities;
 
@@ -10,20 +10,23 @@ namespace PokeBot.PokeBattle
     {
         public PokeEntity CurrentPokemon { get; set; }
         // public Dictionary<string, PokeEntity> PokeInventory { get; set; }
-        public Guid BattleTokenID { get; set; }
-        public int UserId { get; set; }
-        public int PokemonRecordId { get; set; } // Record Id, not literal PokeId
+        public ulong DiscordId { get; set; }
 
-        public BattlePlayer(int userId, int pokemonRecordId, Guid battleTokenId)
+        public BattlePlayer(ulong discordId)
         {
-            UserId = userId;
-            PokemonRecordId = pokemonRecordId;
-            BattleTokenID = battleTokenId;
+            DiscordId = discordId;
         }
 
-        public void InitializeCurrentPokemon(Pokemon pokemon)
+        public void InitializeCurrentPokemon(PokemonForReturnDto pokemonForReturn, PokeTypeForReturnDto pokeType, int id)
         {
-            CurrentPokemon = new PokeEntity(pokemon);
+            CurrentPokemon = new PokeEntity(id, pokemonForReturn, pokeType);
         }
+
+        public void RewardWinningPokemonExperience(PokeEntity victim)
+        {
+            CurrentPokemon.Stats.GainExperience(victim);
+        }
+
+
     }
 }

@@ -5,23 +5,20 @@ namespace PokeBot.PokeBattle
 {
     public class PokeBattleStateManager
     {
-        public IServiceProvider _provider { get; set; }
         public PokeBattleStates _currentState { get; set; }
         public BattlePlayer _playerOne { get; set; }
         public BattlePlayer _playerTwo { get; set; }
-        public PokeBattleStateManager()
+        public PokeBattleStateManager(BattlePlayer playerOne, BattlePlayer playerTwo)
         {
+            _playerOne = playerOne;
+            _playerTwo = playerTwo;
             _currentState = PokeBattleStates.GAME_PENDING;
-        }
-
-        public void InitializePlayers()
-        {
-            
         }
 
         private PokeBattleStates DetermineFirstTurn(PokeEntity playerOne, PokeEntity playerTwo)
         {
-            return playerOne.Stats.Skills["Speed"].Value >= playerTwo.Stats.Skills["Speed"].Value ? PokeBattleStates.PLAYER_ONE : PokeBattleStates.PLAYER_TWO;
+            return playerOne.Stats.Skills["Speed"].Value >= playerTwo.Stats.Skills["Speed"].Value ? PokeBattleStates.PLAYER_ONE 
+                : PokeBattleStates.PLAYER_TWO;
         }
 
         private void UpdateState(PokeBattleStates state)
@@ -83,18 +80,18 @@ namespace PokeBot.PokeBattle
 
         private void doGameStart()
         {
-            // var next = DetermineFirstTurn(_playerOne, _playerTwo);
-            // UpdateState(next);
+            var next = DetermineFirstTurn(_playerOne.CurrentPokemon, _playerTwo.CurrentPokemon);
+            UpdateState(next);
         }
 
         private void doPlayerTwoWin()
         {
-            throw new NotImplementedException();
+            _playerTwo.RewardWinningPokemonExperience(_playerOne.CurrentPokemon);
         }
 
         private void doPlayerOneWin()
         {
-            throw new NotImplementedException();
+            _playerOne.RewardWinningPokemonExperience(_playerTwo.CurrentPokemon);
         }
     }
 }

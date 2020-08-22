@@ -17,7 +17,6 @@ namespace PokeBot.Services
     public class PokemonHandlingService
     {
         private readonly DiscordSocketClient _discord;
-        private readonly PokeCache _cache;
         private IServiceProvider _provider;
         private PokemonController _pokeController;
         private UserController _userController;
@@ -26,16 +25,15 @@ namespace PokeBot.Services
         private readonly int MAX_MINUTE_INTERVAL = 45;
         private ulong _channelId;
 
-        public PokemonHandlingService(DiscordSocketClient discord, IServiceProvider provider, IConfiguration config)
+        public PokemonHandlingService(DiscordSocketClient discord, IServiceProvider provider, PokemonController pokeController, UserController userController, IConfiguration config)
         {
             _discord = discord;
             _provider = provider;
-            _cache = provider.GetRequiredService<PokeCache>();
-            _pokeController = provider.GetRequiredService<PokemonController>();
-            _userController = provider.GetRequiredService<UserController>();
+            _pokeController = pokeController;
+            _userController = userController;
             _channelId = config.GetValue<ulong>("AppSettings:ChannelId");
 
-            _discord.Ready += SendPokemonAppearance;
+            // _discord.Ready += SendPokemonAppearance;
         }
 
         public void Initialize(IServiceProvider provider)
@@ -63,7 +61,7 @@ namespace PokeBot.Services
 
             var channel = _discord.GetChannel(_channelId) as ISocketMessageChannel;
 
-            var pokemon = await _cache.GetPokemon();
+            var pokemon = await _pokeController.GetRandomPokemonData();
             var cwp = _provider.GetRequiredService<CurrentWanderingPokemon>();
             cwp.SetPokemon(pokemon);
             cwp.SetIsCaptured(false);
@@ -73,7 +71,7 @@ namespace PokeBot.Services
             await channel.SendMessageAsync(embed: embeddedMessage);
         }
 
-        private Embed CreateEmbeddedMessage(PokemonForReturnDto pokemon)
+        private Embed CreateEmbeddedMessage(PokemonDataForReturnDto pokemon)
         {
             var upperRule = "═════════════════╗";
             var lowerRule = "═════════════════╝";
@@ -82,7 +80,7 @@ namespace PokeBot.Services
                 .WithAuthor(_discord.CurrentUser)
                 .WithTitle("A Pokemon Wanders Through this Channel...")
                 .WithDescription($"{upperRule} \nA wild `{pokemon.Name}` appears!\n{lowerRule} \n\n Type `!catch` to capture it!")
-                .WithImageUrl(pokemon.Url)
+                .WithImageUrl(pokemon.BastionUrl)
                 .WithFooter(footer => footer.Text = "Appeared ")
                 .WithCurrentTimestamp()
                 .Build();

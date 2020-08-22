@@ -9,8 +9,10 @@ namespace PokeBot.PokeBattle.Entities
         void TakeDamage(int damage);
         void ReceiveEffect(Effect move);
         bool isDead();
-        bool isWeakAgainst(string type);
-        bool isStrongAgainst(string type);
+        bool isHalfDamageFrom(string type);
+        bool isHalfDamageTo(string type);
+        bool isDoubleDamageFrom(string type);
+        bool isDoubleDamageTo(string type);
         Stats GetStats();
         bool isAttackDodged(PokeEntity attacker, Move move);
     }

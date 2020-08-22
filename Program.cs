@@ -46,11 +46,12 @@ namespace Pokebot
                 }
             }
 
-            // services.GetRequiredService<LogService>();
-            // services.GetRequiredService<PokemonHandlingService>().Initialize(services);
-            // await services.GetRequiredService<CommandHandlingService>().InitializeAsync(services);
-            // await _client.LoginAsync(TokenType.Bot, _config.GetSection("AppSettings:Token").Value);
-            // await _client.StartAsync();
+            services.GetRequiredService<LogService>();
+            services.GetRequiredService<PokemonHandlingService>().Initialize(services);
+            services.GetRequiredService<PokeBattleHandlingService>().Initialize(services);
+            await services.GetRequiredService<CommandHandlingService>().InitializeAsync(services);
+            await _client.LoginAsync(TokenType.Bot, _config.GetSection("AppSettings:Token").Value);
+            await _client.StartAsync();
 
             await Task.Delay(-1);
         }
@@ -58,11 +59,11 @@ namespace Pokebot
         private IServiceProvider ConfigureServices()
             => new ServiceCollection()
                 .AddSingleton(_client)
-                .AddSingleton<PokeCache>()
                 .AddSingleton<CurrentWanderingPokemon>()
                 .AddSingleton<CommandService>()
                 .AddSingleton<CommandHandlingService>()
                 .AddSingleton<PokemonHandlingService>()
+                .AddSingleton<PokeBattleHandlingService>()
                 .AddSingleton(_config)
                 .AddAutoMapper(typeof(PokeRepository).Assembly)
                 .AddLogging()

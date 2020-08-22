@@ -11,6 +11,7 @@ namespace PokeBot.Data
         void Delete<T>(T entity) where T : class;
         Task<bool> SaveAll();
         Task<User> GetUser(int id);
+        Task<IEnumerable<User>> GetUsersByBattleTokenId(Guid battleTokenId);
         Task<Pokemon> GetPokemon(int id);
         Task<PokemonData> GetPokemonData(int id);
         Task<PokeBattleData> GetPokeBattleData(int id);
@@ -19,6 +20,7 @@ namespace PokeBot.Data
         Task<Pokemon> GetPokemonByPokeId(int pokeId);
         Task<User> GetUserByDiscordId(ulong discordId);
         Task<PokeBattleData> GetPokeBattleDataByGUID(Guid battleId);
+        Task<PokeType> GetPokeTypeByName(string name);
         Task<PokemonData> GetPokemonDataByPokeId(int pokeId);
         Task<IEnumerable<User>> GetUsers();
         Task<IEnumerable<MoveData>> GetMoves();

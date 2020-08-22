@@ -1,37 +1,88 @@
 using System;
 using System.Collections.Generic;
+using PokeBot.Dtos;
 using PokeBot.Models;
 using PokeBot.PokeBattle.Common;
 using PokeBot.PokeBattle.Moves;
 using PokeBot.PokeBattle.Moves.Ailments;
+using PokeBot.PokeBattle.Utils;
 
 namespace PokeBot.PokeBattle.Entities
 {
     public class PokeEntity : ICombative
     {
+        public int Id { get; set; }
+        public PokeTypeForReturnDto PokeType { get; set; }
         public Stats Stats { get; set; }
-        public HashSet<string> WeakAgainst { get; set; } // Takes double damage from, and gives half damage to
-        public HashSet<string> StrongAgainst { get; set; } // Takes half damage from, and gives double damage to
-        public PokeEntity(Pokemon pokemon)
+        public HashSet<string> Half_Damage_From { get; set; }
+        public HashSet<string> Half_Damage_To { get; set; }
+        public HashSet<string> Double_Damage_From { get; set; }
+        public HashSet<string> Double_Damage_To { get; set; }
+        public PokeEntity(int id, PokemonForReturnDto pokemon, PokeTypeForReturnDto pokeType)
         {
-            Stats = MapStatsFromPokemon(pokemon);
-            WeakAgainst = GetWeaknesses(pokemon.Type);
-            StrongAgainst = GetStrengths(pokemon.Type);
+            Id = id;
+            Stats = BuildStatsFromPokemon(pokemon);
+            Half_Damage_From = GetHalfDamageFromTypes(pokeType);
+            Half_Damage_To = GetHalfDamageToTypes(pokeType);
+            Double_Damage_From = GetDoubleDamageFromTypes(pokeType);
+            Double_Damage_To = GetDoubleDamageToTypes(pokeType);
         }
 
-        private HashSet<string> GetStrengths(string type)
+        private HashSet<string> GetDoubleDamageToTypes(PokeTypeForReturnDto type)
         {
-            return null;
+            HashSet<string> setToReturn = new HashSet<string>();
+            foreach (var t in type.Double_Damage_To)
+            {
+                setToReturn.Add(t);
+            }
+            return setToReturn;
         }
 
-        private HashSet<string> GetWeaknesses(string type)
+        private HashSet<string> GetDoubleDamageFromTypes(PokeTypeForReturnDto type)
         {
-            throw new NotImplementedException();
+            HashSet<string> setToReturn = new HashSet<string>();
+            foreach (var t in type.Double_Damage_From)
+            {
+                setToReturn.Add(t);
+            }
+            return setToReturn;
         }
 
-        private Stats MapStatsFromPokemon(Pokemon pokemon)
+        private HashSet<string> GetHalfDamageToTypes(PokeTypeForReturnDto type)
         {
-            throw new NotImplementedException();
+            HashSet<string> setToReturn = new HashSet<string>();
+            foreach (var t in type.Half_Damage_To)
+            {
+                setToReturn.Add(t);
+            }
+            return setToReturn;
+        }
+
+        private HashSet<string> GetHalfDamageFromTypes(PokeTypeForReturnDto type)
+        {
+            HashSet<string> setToReturn = new HashSet<string>();
+            foreach (var t in type.Half_Damage_From)
+            {
+                setToReturn.Add(t);
+            }
+            return setToReturn;
+        }
+
+        private Stats BuildStatsFromPokemon(PokemonForReturnDto pokemon)
+        {
+            return new StatsBuilder()
+                .HP(pokemon.MaxHP)
+                .Level(pokemon.Level)
+                .Base_Experience(pokemon.Base_Experience)
+                .Experience(pokemon.Experience)
+                .Attack(pokemon.Attack)
+                .Defense(pokemon.Defense)
+                .SpecialAttack(pokemon.SpecialAttack)
+                .SpecialDefense(pokemon.SpecialDefense)
+                .Speed(pokemon.Speed)
+                .Accuracy(1.0f) //Accuracy always starts at 100%
+                .Evasion(1.0f)
+                .Build();
         }
 
         public void CombatAction(ICombative other, Move move)
@@ -78,7 +129,9 @@ namespace PokeBot.PokeBattle.Entities
         private int CalculateDamage(ICombative defender, Attack move)
         {
             var modifier = GetDamageModifier(defender, move);
-            var numerator = (((2 * Stats.Level) / 5) + 2) * move.Power * (this.Stats.Skills["Attack"].Value / this.Stats.Skills["Defense"].Value) * modifier;
+            string attackSkill = isSpecialAttack(move.Type) ? "SpecialAttack" : "Attack";
+            string defenseSkill = isSpecialAttack(move.Type) ? "SpecialDefense" : "Defense";
+            var numerator = (((2 * Stats.Level) / 5) + 2) * move.Power * (this.Stats.Skills[attackSkill].Value / defender.GetStats().Skills[defenseSkill].Value) * modifier;
             var denominator = 50;
 
             var damage = ((numerator / denominator) + 2) * modifier;
@@ -89,15 +142,20 @@ namespace PokeBot.PokeBattle.Entities
         private float GetDamageModifier(ICombative defender, Attack move)
         {
             float modifier = 1f;
-            if (defender.isWeakAgainst(move.Type))
+            if (defender.isDoubleDamageFrom(move.Type))
             {
                 modifier = 2.0f;
             }
-            else if (defender.isStrongAgainst(move.Type))
+            else if (defender.isHalfDamageTo(move.Type))
             {
                 modifier = 0.5f;
             }
             return modifier;
+        }
+
+        private bool isSpecialAttack(string type)
+        {
+            return SpecialMoveTypeSetUtils.GetSpecialMoveTypeSet.Contains(type);
         }
 
         public Stats GetStats()
@@ -144,14 +202,23 @@ namespace PokeBot.PokeBattle.Entities
             return r > (ailment.AilmentChance);
         }
 
-        public bool isWeakAgainst(string type)
+        public bool isHalfDamageFrom(string type)
         {
-            return WeakAgainst.Contains(type);
+            return Half_Damage_From.Contains(type);
         }
 
-        public bool isStrongAgainst(string type)
+        public bool isHalfDamageTo(string type)
         {
-            return StrongAgainst.Contains(type);
+            return Half_Damage_To.Contains(type);
+        }
+        public bool isDoubleDamageFrom(string type)
+        {
+            return Double_Damage_From.Contains(type);
+        }
+
+        public bool isDoubleDamageTo(string type)
+        {
+            return Double_Damage_To.Contains(type);
         }
     }
 }

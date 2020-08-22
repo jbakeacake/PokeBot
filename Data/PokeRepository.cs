@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using PokeBot.Dtos;
 using PokeBot.Models;
 
 namespace PokeBot.Data
@@ -48,12 +50,12 @@ namespace PokeBot.Data
 
         public async Task<bool> UserExists(ulong discordId)
         {
-            return await _context.Users_Tbl.AnyAsync(x => x.DiscordId == discordId);
+            return await _context.Users_Tbl.AsQueryable().AnyAsync(x => x.DiscordId == discordId);
         }
 
         public async Task<bool> PokemonExists(int pokeId)
         {
-            return await _context.Pokemon_Tbl.AnyAsync(x => x.PokeId == pokeId);
+            return await _context.Pokemon_Tbl.AsQueryable().AnyAsync(x => x.PokeId == pokeId);
         }
 
         public Task<PokemonData> GetPokemonData(int id)
@@ -108,12 +110,25 @@ namespace PokeBot.Data
 
         public Task<Pokemon> GetPokemon(int id)
         {
-            throw new NotImplementedException();
+            var pokemon = _context.Pokemon_Tbl.AsQueryable().FirstOrDefaultAsync(x => x.Id == id);
+            return pokemon;
         }
 
         public Task<Pokemon> GetPokemonByPokeId(int pokeId)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<IEnumerable<User>> GetUsersByBattleTokenId(Guid battleTokenId)
+        {
+            var users = await _context.Users_Tbl.AsQueryable().Where(x => x.BattleTokenId.Equals(battleTokenId)).ToListAsync();
+            return users;
+        }
+
+        public async Task<PokeType> GetPokeTypeByName(string name)
+        {
+            var pokeType = await _context.PokeType_Tbl.AsQueryable().FirstOrDefaultAsync(x => x.Name == name);
+            return pokeType;
         }
     }
 }

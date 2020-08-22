@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PokeBot.Data;
 
 namespace Pokebot.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20200821054112_AddedExpirationDateToPokeBattles")]
+    partial class AddedExpirationDateToPokeBattles
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -88,10 +90,19 @@ namespace Pokebot.Migrations
                     b.Property<Guid>("BattleTokenId")
                         .HasColumnType("TEXT");
 
-                    b.Property<ulong>("UserOneId")
+                    b.Property<DateTime>("ExpirationDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserOneId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<ulong>("UserTwoId")
+                    b.Property<int>("UserOnePokemonId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserTwoId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserTwoPokemonId")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");

@@ -14,6 +14,8 @@ namespace PokeBot.Helpers
             CreateMap<UserForCreationDto, User>();
             CreateMap<User, UserForCreationDto>();
 
+            CreateMap<UserForUpdateDto, User>();
+
             CreateMap<Pokemon, PokemonForReturnDto>();
             CreateMap<PokemonForReturnDto, Pokemon>();
 
@@ -27,7 +29,7 @@ namespace PokeBot.Helpers
             CreateMap<MoveDataForCreationDto, MoveData>();
             CreateMap<MoveLinkForCreationDto, MoveLink>();
 
-            CreateMap<PokeType, PokeTypeForReturn>()
+            CreateMap<PokeType, PokeTypeForReturnDto>()
                 .ForMember(
                     dest => dest.Double_Damage_From,
                     opt => opt.MapFrom(src => src.Delimited_Double_Damage_From.SplitString(','))
@@ -45,6 +47,8 @@ namespace PokeBot.Helpers
                     opt => opt.MapFrom(src => src.Delimited_Half_Damage_To.SplitString(','))
                 );
 
+            CreateMap<PokeBattleForCreationDto, PokeBattleData>();
+            CreateMap<PokeBattleData, PokeBattleForCreationDto>();
         }
     }
 }

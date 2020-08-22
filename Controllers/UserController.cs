@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
 using PokeBot.Data;
@@ -48,6 +49,13 @@ namespace PokeBot.Controllers
             return userForReturnDto;
         }
 
+        public async Task<IEnumerable<UserForReturnDto>> GetUsersByBattleTokenId(Guid battleTokenId)
+        {
+            var usersFromRepo = await _repo.GetUsersByBattleTokenId(battleTokenId);
+            var usersForReturn = _mapper.Map<IEnumerable<UserForReturnDto>>(usersFromRepo);
+            return usersForReturn;
+        }
+
         public async Task AddToUserPokeCollection(int id, PokemonForCreationDto pokemonForUpdateDto)
         {
             var userFromRepo = await _repo.GetUser(id);
@@ -71,6 +79,19 @@ namespace PokeBot.Controllers
 
             var res = await _repo.SaveAll();
             if (!res) throw new Exception($"Updating user {discordId}. Failed to save to database!");
+        }
+
+        public async Task UpdateUser(ulong discordId, UserForUpdateDto userForUpdateDto)
+        {
+            if(!(await _repo.UserExists(discordId))) return;
+
+            var userFromRepo = await _repo.GetUserByDiscordId(discordId);
+            _mapper.Map(userForUpdateDto, userFromRepo);
+
+            if(await _repo.SaveAll())
+                return;
+            
+            throw new Exception($"Updating user {discordId} failed on save...");
         }
     }
 }

@@ -4,9 +4,9 @@ namespace PokeBot.Services.Helpers
 {
     public class CurrentWanderingPokemon
     {
-        public PokemonForReturnDto _pokemon { get; set; }
+        public PokemonDataForReturnDto _pokemon { get; set; }
         public bool _isCaptured { get; set; }
-        public CurrentWanderingPokemon(PokemonForReturnDto pokemon)
+        public CurrentWanderingPokemon(PokemonDataForReturnDto pokemon)
         {
             _pokemon = pokemon;
             _isCaptured = false;
@@ -14,7 +14,7 @@ namespace PokeBot.Services.Helpers
 
         public CurrentWanderingPokemon()
         {
-            _pokemon = new PokemonForReturnDto();
+            _pokemon = new PokemonDataForReturnDto();
             _isCaptured = true;
         }
 
@@ -23,7 +23,7 @@ namespace PokeBot.Services.Helpers
             return _isCaptured;
         }
 
-        public void SetPokemon(PokemonForReturnDto pokemon)
+        public void SetPokemon(PokemonDataForReturnDto pokemon)
         {
             _pokemon = pokemon;
         }
