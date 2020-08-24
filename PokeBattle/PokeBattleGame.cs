@@ -29,18 +29,64 @@ namespace PokeBot.PokeBattle
                 PlayerOne.DiscordId,
                 PlayerTwo.DiscordId
             );
-
+            StateManager = new PokeBattleStateManager(PlayerOne, PlayerTwo);
             await PokemonController.RegisterPokeBattle(pokeBattleForCreationDto);
+        }
+        
+        public BattlePlayer GetPlayer(ulong discordId)
+        {
+            if(PlayerOne.DiscordId == discordId)
+            {
+                return PlayerOne;
+            }
+            else if (PlayerTwo.DiscordId == discordId)
+            {
+                return PlayerTwo;
+            }
+            else
+            {
+                throw new Exception($"Failed to get Player. Unknown player of id {discordId}.");
+            }
         }
 
         public bool isGameOver()
         {
             return StateManager.isGameOver();
         }
-
-        public void StartGame()
+        public bool isGameReady()
         {
-            System.Console.WriteLine("INITIATE GAME");
+            return PlayerOne.CurrentPokemon != null
+                && PlayerTwo.CurrentPokemon != null;
+        }
+
+        public void RunGame(int moveIndex)
+        {
+            StateManager.ExecuteTurn(moveIndex);
+        }
+        public BattlePlayer GetPlayerForMove()
+        {
+            BattlePlayer playerToReturn = null;
+            System.Console.WriteLine("STATE: " + StateManager._currentState);
+
+            if (StateManager._currentState == PokeBattleStates.PLAYER_ONE)
+            {
+                playerToReturn = StateManager._playerOne;
+            }
+            else if (StateManager._currentState == PokeBattleStates.PLAYER_TWO)
+            {
+                playerToReturn = StateManager._playerTwo;
+            }
+
+            return playerToReturn;
+        }
+
+        public async Task ClearTokens()
+        {
+            UserForUpdateDto playerOneForUpdate = new UserForUpdateDto(Guid.Empty);
+            UserForUpdateDto playerTwoForUpdate = new UserForUpdateDto(Guid.Empty);
+
+            await UserController.UpdateUser(PlayerOne.DiscordId, playerOneForUpdate);
+            await UserController.UpdateUser(PlayerTwo.DiscordId, playerTwoForUpdate);
         }
     }
 }

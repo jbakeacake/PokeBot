@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PokeBot.Controllers;
 using PokeBot.Dtos;
 using PokeBot.Models;
-using PokeBot.Services.Helpers;
+using PokeBot.Helpers;
 
 namespace PokeBot.Services
 {

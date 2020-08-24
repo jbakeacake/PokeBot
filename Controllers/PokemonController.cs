@@ -61,5 +61,12 @@ namespace PokeBot.Controllers
             var pokeTypeForReturn = _mapper.Map<PokeTypeForReturnDto>(pokeTypeFromRepo);
             return pokeTypeForReturn;
         }
+
+        public async Task<MoveDataForReturnDto> GetMoveData(int moveId)
+        {
+            var moveDataFromRepo = await _repo.GetMoveDataByMoveId(moveId);
+            var moveDataForReturn = _mapper.Map<MoveDataForReturnDto>(moveDataFromRepo);
+            return moveDataForReturn;
+        }
     }
 }

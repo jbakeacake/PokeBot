@@ -1,6 +1,6 @@
 using PokeBot.Dtos;
 
-namespace PokeBot.Services.Helpers
+namespace PokeBot.Helpers
 {
     public class CurrentWanderingPokemon
     {

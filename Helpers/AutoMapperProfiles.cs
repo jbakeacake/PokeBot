@@ -16,7 +16,11 @@ namespace PokeBot.Helpers
 
             CreateMap<UserForUpdateDto, User>();
 
-            CreateMap<Pokemon, PokemonForReturnDto>();
+            CreateMap<Pokemon, PokemonForReturnDto>()
+                .ForMember(
+                    dest => dest.MoveIds,
+                    opt => opt.MapFrom(src => new int[]{src.MoveId_One, src.MoveId_Two, src.MoveId_Three, src.MoveId_Four})
+                );
             CreateMap<PokemonForReturnDto, Pokemon>();
 
             CreateMap<PokemonForCreationDto, Pokemon>();

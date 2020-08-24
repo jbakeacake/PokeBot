@@ -1,33 +1,55 @@
 using System;
 using System.Collections.Generic;
 using PokeBot.Dtos;
-using PokeBot.Models;
 using PokeBot.PokeBattle.Common;
 using PokeBot.PokeBattle.Moves;
 using PokeBot.PokeBattle.Moves.Ailments;
-using PokeBot.PokeBattle.Utils;
+using PokeBot.Utils;
 
 namespace PokeBot.PokeBattle.Entities
 {
     public class PokeEntity : ICombative
     {
         public int Id { get; set; }
+        public string Name { get; set; }
         public PokeTypeForReturnDto PokeType { get; set; }
         public Stats Stats { get; set; }
+        public Move[] Moves { get; set; }
+        public bool Disabled { get; set; }
+        public Dictionary<string, Ailment> CurrentAilments { get; set; }
         public HashSet<string> Half_Damage_From { get; set; }
         public HashSet<string> Half_Damage_To { get; set; }
         public HashSet<string> Double_Damage_From { get; set; }
         public HashSet<string> Double_Damage_To { get; set; }
-        public PokeEntity(int id, PokemonForReturnDto pokemon, PokeTypeForReturnDto pokeType)
+        public PokeEntity(int id, PokemonForReturnDto pokemon, PokeTypeForReturnDto pokeType, Move[] moves)
         {
             Id = id;
+            Name = pokemon.Name;
+            Moves = moves;
+            PokeType = pokeType;
+            Disabled = false;
             Stats = BuildStatsFromPokemon(pokemon);
             Half_Damage_From = GetHalfDamageFromTypes(pokeType);
             Half_Damage_To = GetHalfDamageToTypes(pokeType);
             Double_Damage_From = GetDoubleDamageFromTypes(pokeType);
             Double_Damage_To = GetDoubleDamageToTypes(pokeType);
         }
-
+        private Stats BuildStatsFromPokemon(PokemonForReturnDto pokemon)
+        {
+            return new StatsBuilder()
+                .HP(pokemon.MaxHP)
+                .Level(pokemon.Level)
+                .Base_Experience(pokemon.Base_Experience)
+                .Experience(pokemon.Experience)
+                .Attack(pokemon.Attack)
+                .Defense(pokemon.Defense)
+                .SpecialAttack(pokemon.SpecialAttack)
+                .SpecialDefense(pokemon.SpecialDefense)
+                .Speed(pokemon.Speed)
+                .Accuracy(1.0f) //Accuracy always starts at 100%
+                .Evasion(1.0f)
+                .Build();
+        }
         private HashSet<string> GetDoubleDamageToTypes(PokeTypeForReturnDto type)
         {
             HashSet<string> setToReturn = new HashSet<string>();
@@ -68,42 +90,31 @@ namespace PokeBot.PokeBattle.Entities
             return setToReturn;
         }
 
-        private Stats BuildStatsFromPokemon(PokemonForReturnDto pokemon)
-        {
-            return new StatsBuilder()
-                .HP(pokemon.MaxHP)
-                .Level(pokemon.Level)
-                .Base_Experience(pokemon.Base_Experience)
-                .Experience(pokemon.Experience)
-                .Attack(pokemon.Attack)
-                .Defense(pokemon.Defense)
-                .SpecialAttack(pokemon.SpecialAttack)
-                .SpecialDefense(pokemon.SpecialDefense)
-                .Speed(pokemon.Speed)
-                .Accuracy(1.0f) //Accuracy always starts at 100%
-                .Evasion(1.0f)
-                .Build();
-        }
-
         public void CombatAction(ICombative other, Move move)
         {
-            if (move is Attack)
-            {
-                Attack(other, (Attack)move);
-            }
-            else if (move is Effect)
-            {
-                ApplyEffect(other, (Effect)move);
-            }
+            Attack(other, move);
         }
 
-        public void ReceiveEffect(Effect move)
+        public void ReceiveEffect(Move move)
         {
-            Stats.Skills[move.StatName].CalculateStageMultiplier(move.StatChange);
+            Stats.Skills[move.StatChangeName].CalculateStageMultiplier(move.StatChangeValue);
         }
-        private void ApplyEffect(ICombative other, Effect move)
+        public void TryToRecoverAilments()
         {
-            if (move.TargetsOther && !other.isAttackDodged(this, move))
+            foreach(var ailment in CurrentAilments.Values)
+            {
+                if(ailment.IsRecoverySuccessful())
+                {
+                    CurrentAilments.Remove(ailment.Name);
+                    System.Console.WriteLine($"{Name} recovered from {ailment.Name}");
+                }
+            }
+        }
+        private void ApplyEffect(ICombative other, Move move)
+        {
+            if (move.TargetsOther 
+                && !other.isAttackDodged(this, move)
+                && isEffectSuccessful(this, move))
             {
                 other.ReceiveEffect(move);
             }
@@ -115,9 +126,11 @@ namespace PokeBot.PokeBattle.Entities
 
         public void ReceiveAilment(Ailment ailment)
         {
+            if(CurrentAilments.ContainsKey(ailment.Name)) return;
+            CurrentAilments.Add(ailment.Name, ailment);
         }
 
-        private void Attack(ICombative other, Attack move)
+        private void Attack(ICombative other, Move move)
         {
             if (!isAttackDodged((PokeEntity)other, move))
             {
@@ -126,7 +139,7 @@ namespace PokeBot.PokeBattle.Entities
             }
         }
 
-        private int CalculateDamage(ICombative defender, Attack move)
+        private int CalculateDamage(ICombative defender, Move move)
         {
             var modifier = GetDamageModifier(defender, move);
             string attackSkill = isSpecialAttack(move.Type) ? "SpecialAttack" : "Attack";
@@ -139,7 +152,7 @@ namespace PokeBot.PokeBattle.Entities
             return (int)damage;
         }
 
-        private float GetDamageModifier(ICombative defender, Attack move)
+        private float GetDamageModifier(ICombative defender, Move move)
         {
             float modifier = 1f;
             if (defender.isDoubleDamageFrom(move.Type))
@@ -185,11 +198,11 @@ namespace PokeBot.PokeBattle.Entities
             return r <= threshold;
         }
 
-        public bool isEffectSuccessful(PokeEntity attacker, Effect move)
+        public bool isEffectSuccessful(PokeEntity attacker, Move move)
         {
-            int threshold = 100 - move.EffectChance; // Anything less
+            float threshold = 100f - move.EffectChance; // Anything less
             Random rand = new Random();
-            int r = rand.Next(101);
+            float r = rand.Next(101);
 
             return r >= threshold;
         }
@@ -219,6 +232,16 @@ namespace PokeBot.PokeBattle.Entities
         public bool isDoubleDamageTo(string type)
         {
             return Double_Damage_To.Contains(type);
+        }
+
+        public void SetDisabled(bool isDisabled)
+        {
+            Disabled = isDisabled;
+        }
+
+        public bool isDisabled()
+        {
+            return Disabled;
         }
     }
 }

@@ -12,7 +12,6 @@ using PokeBot.Controllers;
 using PokeBot.Data;
 using PokeBot.Helpers;
 using PokeBot.Services;
-using PokeBot.Services.Helpers;
 
 namespace Pokebot
 {

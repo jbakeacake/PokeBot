@@ -7,9 +7,13 @@ using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using PokeBot.Controllers;
 using PokeBot.Dtos;
-using PokeBot.Modules.Helpers;
+using PokeBot.Utils;
 using PokeBot.PokeBattle;
 using PokeBot.Services;
+using PokeBot.Managers;
+using PokeBot.PokeBattle.Entities;
+using System.Linq;
+using PokeBot.PokeBattle.Moves;
 
 namespace PokeBot.Modules
 {
@@ -18,35 +22,21 @@ namespace PokeBot.Modules
         public UserController _userController { get; set; }
         public PokemonController _pokemonController { get; set; }
         private readonly IServiceProvider _provider;
-        private readonly PokeBattleHandlingService _pokeBattleService;
+        private GameHandler _gameHandler { get; set; }
         public BattleModule(IServiceProvider provider, UserController userController, PokemonController pokemonController, PokeBattleHandlingService pokeBattleHandlingService)
         {
             _provider = provider;
             _userController = userController;
             _pokemonController = pokemonController;
-            _pokeBattleService = pokeBattleHandlingService;
+            _gameHandler = pokeBattleHandlingService._handler;
         }
 
         [Command("duel")]
         public async Task Duel(SocketUser receiver)
         {
-
             SocketUser sender = Context.Message.Author;
             System.Console.WriteLine("Sending invite...");
-            if(await isBusy(receiver))
-            {
-                await sender.SendMessageAsync("User is currently busy with another duel! Try again later.");
-                return;
-            }
-            //Create Invitation Message:
-            var embeddedMessage = EmbeddedMessageHelper.CreateInvitationMessage(Context.Client.CurrentUser, sender, receiver);
-            var invite = await receiver.SendMessageAsync(embed: embeddedMessage);
-            await invite.AddReactionAsync(new Emoji("✅"));
-            await invite.AddReactionAsync(new Emoji("❌"));
-
-            _pokeBattleService._busyUsers.Add(sender.Id);
-            _pokeBattleService._busyUsers.Add(receiver.Id);
-            _pokeBattleService._pendingInvites.Add(invite.Id, (sender.Id, receiver.Id));
+            await _gameHandler.SendInviteToPlayer(sender, receiver);
         }
 
         [Command("choose")]
@@ -54,50 +44,71 @@ namespace PokeBot.Modules
         {
             var user = Context.Message.Author;
             var battleTokenId = (await _userController.GetUserByDiscordId(user.Id)).BattleTokenId;
-            
-            //Ignore if the user isn't busy OR if they dont have a game setup 
-            if(!(await isBusy(user))
-                || !_pokeBattleService._currentGames.ContainsKey(battleTokenId)) return;
+
+            if (_gameHandler.isPlayerInBattle(user.Id)) return;
+            if (battleTokenId == Guid.Empty) return;
+
+            System.Console.WriteLine("Pokemon Chosen...");
+            var game = _gameHandler._games[battleTokenId];
+            var player = game.GetPlayer(user.Id);
+            var pokemon = await _pokemonController.GetPokemonFromUserInventory(pokemonId);
+            var pokemonData = await _pokemonController.GetPokemonData(pokemon.PokeId);
+            var pokeType = await _pokemonController.GetPokeType(pokemon.Type);
+            var moves = await GetMovesFromIds(pokemon.MoveIds);
+            player.InitializeCurrentPokemon(pokemon, pokeType, moves, pokemon.Id);
+            System.Console.WriteLine(game.GetPlayer(user.Id).CurrentPokemon.Name + " initialized!");
 
             //Initialize this player's pokemon for their game
-            await _pokeBattleService.InitializePlayerAsync(battleTokenId, user.Id, pokemonId);
-
-            var chosenPokemon = await _pokemonController.GetPokemonFromUserInventory(pokemonId);
-            var waitingMessage = CreateWaitingForOtherPlayerEmbed(chosenPokemon);
-            await user.SendMessageAsync(embed: waitingMessage);
-
-            var game = _pokeBattleService._currentGames[battleTokenId];
-            if(areBothPlayersReady(game))
+            if (game.isGameReady())
             {
-                System.Console.WriteLine("BINGO");
+                //Add these players to the "battlePlayers" set:
+                _gameHandler._battlingPlayers.Add(game.PlayerOne.DiscordId);
+                _gameHandler._battlingPlayers.Add(game.PlayerTwo.DiscordId);
+                //Initialize the game:
                 await game.InitializeAsync(battleTokenId);
-                game.StartGame();
+                //Run the game:
+                game.RunGame(-1);
+                //Notify both players that the game is starting:
+                var versusCard = EmbeddedMessageUtil.CreateVersusPokemonEmbed(Context.Client.CurrentUser, game.PlayerOne, game.PlayerTwo);
+                await _gameHandler.SendPlayerMessage(versusCard, game.PlayerOne.DiscordId);
+                await _gameHandler.SendPlayerMessage(versusCard, game.PlayerTwo.DiscordId);
+                //Notify the player that is going first to make a move:
+                var nextPlayer = game.GetPlayerForMove();
+                await _gameHandler.NotifyPlayerOfTurn(nextPlayer.DiscordId);
+            }
+            else
+            {
+                await _gameHandler.SendPlayerAwaitingOnOther(user.Id);
             }
         }
 
-        private bool areBothPlayersReady(PokeBattleGame game)
+        private async Task<Move[]> GetMovesFromIds(int[] moveIds)
         {
-            return game.PlayerOne.CurrentPokemon != null && game.PlayerTwo.CurrentPokemon != null; 
+            Move[] arr = new Move[moveIds.Length];
+            for(int i = 0; i < moveIds.Length; i++)
+            {
+                var moveData = await _pokemonController.GetMoveData(moveIds[i]); 
+                arr[i] = CreateMove(moveData);
+            }
+
+            return arr;
         }
 
-        private Embed CreateWaitingForOtherPlayerEmbed(PokemonForReturnDto chosenPokemon)
+        private Move CreateMove(MoveDataForReturnDto moveData)
         {
-            return new EmbedBuilder()
-                .WithAuthor(Context.Client.CurrentUser)
-                .WithTitle("Awaiting other player's choice…")
-                .WithDescription($"Your Chosen Pokemon ► {chosenPokemon.Name} • {chosenPokemon.Level} • {chosenPokemon.MaxHP} / {chosenPokemon.MaxHP}")
-                .WithFooter(footer => footer.Text = "Waiting Since ")
-                .WithCurrentTimestamp()
+            return new MoveBuilder()
+                .Name(moveData.Name)
+                .StageMultiplierForAccuracy(1)
+                .Accuracy(moveData.Accuracy)
+                .EffectChance(moveData.Effect_Chance)
+                .Ailment(moveData.AilmentName)
+                .Power(moveData.Power)
+                .PP(moveData.PP)
+                .Type(moveData.Type)
+                .StatChangeName(moveData.StatChangeName)
+                .StatChangeValue(moveData.StatChangeValue)
+                .TargetsOther(moveData.Target)
                 .Build();
-        }
-
-        private async Task<bool> isBusy(IUser user)
-        {
-            var userForReturn = await _userController.GetUserByDiscordId(user.Id);
-
-            return userForReturn == null 
-                || _pokeBattleService._busyUsers.Contains(user.Id)
-                || userForReturn.BattleTokenId != Guid.Empty;
         }
     }
 }

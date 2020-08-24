@@ -6,29 +6,30 @@ using Discord.Commands;
 using Discord.WebSocket;
 using PokeBot.Controllers;
 using PokeBot.Dtos;
+using PokeBot.Managers;
 using PokeBot.PokeBattle;
+using PokeBot.Utils;
 
 namespace PokeBot.Services
 {
     public class PokeBattleHandlingService
     {
         private readonly DiscordSocketClient _discord;
-        public Dictionary<Guid, PokeBattleGame> _currentGames;
-        public Dictionary<ulong, (ulong, ulong)> _pendingInvites { get; set; }
-        public HashSet<ulong> _busyUsers { get; set; }
         private IServiceProvider _provider;
         private PokemonController _pokeController;
         private UserController _userController;
+        public GameHandler _handler { get; set; }
         public PokeBattleHandlingService(DiscordSocketClient discord, IServiceProvider provider, PokemonController pokemonController, UserController userController)
         {
             _discord = discord;
             _provider = provider;
             _pokeController = pokemonController;
             _userController = userController;
-            _busyUsers = new HashSet<ulong>();
-            _currentGames = new Dictionary<Guid, PokeBattleGame>();
-            _pendingInvites = new Dictionary<ulong, (ulong, ulong)>(); // item1: sender, item2: receiver
-            _discord.ReactionAdded += ListenForDuelReactions;
+
+            _handler = new GameHandler(discord, pokemonController, userController);
+
+            _discord.ReactionAdded += ListenForInviteReactions;
+            _discord.ReactionAdded += ListenForBattleReactions;
         }
 
         public void Initialize(IServiceProvider provider)
@@ -36,88 +37,64 @@ namespace PokeBot.Services
             _provider = provider;
         }
 
-        private async Task ListenForDuelReactions(Cacheable<IUserMessage, ulong> before, ISocketMessageChannel channel, SocketReaction reaction)
+        private async Task ListenForInviteReactions(Cacheable<IUserMessage, ulong> before, ISocketMessageChannel channel, SocketReaction reaction)
         {
             var message = await before.GetOrDownloadAsync();
-            //If the reaction was NOT to a bot message
-            if (message.Source != MessageSource.Bot) return;
-            //If the reaction was BY this bot
-            if (reaction.User.Value.Id == _discord.CurrentUser.Id) return;
+            //If the message was authored by a user
+            if (message.Source == MessageSource.User) return;
+            //If the reaction was made by the Bot
+            if (reaction.UserId == _discord.CurrentUser.Id) return;
 
             await DoInviteAction(reaction, message);
         }
 
+        private async Task ListenForBattleReactions(Cacheable<IUserMessage, ulong> before, ISocketMessageChannel channel, SocketReaction reaction)
+        {
+            if(reaction.UserId == _discord.CurrentUser.Id) return;
+            var moveSetMap = MoveSetEmojiMapUtil.GetMoveSetEmojiMap;
+            if(!moveSetMap.ContainsKey(reaction.Emote)) return;
+            
+            //Get the message that was reacted to:
+            var message = await before.GetOrDownloadAsync();
+
+            //Execute the current players turn
+            int chosenMove = moveSetMap[reaction.Emote];
+            var user = await _userController.GetUserByDiscordId(reaction.UserId);
+            var game = _handler._games[user.BattleTokenId];
+            var moveIndex = MoveSetEmojiMapUtil.GetMoveSetEmojiMap[reaction.Emote];
+            
+            // Run the game, executing the current players turn, thus making it the next players turn
+            game.RunGame(moveIndex);
+            
+            //Now, notify that the next player's turn is ready
+            var nextPlayer = game.GetPlayerForMove();
+            //If the game is over, let us know:
+            if(game.isGameOver())
+            {
+                await _handler.SendPlayerMessage("GAME OVER", game.PlayerOne.DiscordId);
+                await _handler.SendPlayerMessage("GAME OVER", game.PlayerTwo.DiscordId);
+                await game.ClearTokens();
+                await message.DeleteAsync();
+                return;
+            }
+            await _handler.NotifyPlayerOfTurn(nextPlayer.DiscordId);
+            await message.DeleteAsync();
+        }
+
         private async Task DoInviteAction(SocketReaction reaction, IUserMessage message)
         {
-            if (reaction.Emote.Equals(new Emoji("✅")))
+            if (reaction.Emote.Name.Equals("✅"))
             {
-                //Get Users:
-                var ids = _pendingInvites[message.Id];
-                var senderId = ids.Item1;
-                var receiverId = ids.Item2;
-
-                //Clean up messages
-                _pendingInvites.Remove(message.Id);
+                await _handler.CreateGame(message.Id);
                 await message.DeleteAsync();
-                // Prepare pokemon choices...
-                var senderEmbedMessage = await CreateChoosePokemonMessage(senderId);
-                var receiverEmbedMessage = await CreateChoosePokemonMessage(receiverId);
-                await _discord.GetUser(senderId).SendMessageAsync(embed: senderEmbedMessage);
-                await _discord.GetUser(receiverId).SendMessageAsync(embed: receiverEmbedMessage);
-                // Create Game Entry for Dictionary:
-                Guid battleId = Guid.NewGuid();
-                UserForUpdateDto playerOneForUpdate = new UserForUpdateDto(battleId);
-                UserForUpdateDto playerTwoForUpdate = new UserForUpdateDto(battleId);
-
-                await _userController.UpdateUser(senderId, playerOneForUpdate);
-                await _userController.UpdateUser(receiverId, playerTwoForUpdate);
-
-                PokeBattleGame game = new PokeBattleGame(_pokeController, _userController);
-                game.PlayerOne = new BattlePlayer(senderId);
-                game.PlayerTwo = new BattlePlayer(receiverId);
-                _currentGames.Add(battleId, game);
+                var (playerOneId, playerTwoId) = _handler.GetPendingPlayersFromInvitationGroup(message.Id);
+                await _handler.SendPokemonListToPlayer(playerOneId);
+                await _handler.SendPokemonListToPlayer(playerTwoId);
             }
-            else if (reaction.Emote.Equals(new Emoji("❌")))
+            else if (reaction.Emote.Name.Equals("❌"))
             {
-                _pendingInvites.Remove(message.Id);
                 await message.DeleteAsync();
             }
-        }
-
-        public async Task InitializePlayerAsync(Guid battleTokenId, ulong discordId, int pokemonId)
-        {
-            var game = _currentGames[battleTokenId];
-            var pokemon = await _pokeController.GetPokemonFromUserInventory(pokemonId);
-            var pokeType = await _pokeController.GetPokeType(pokemon.Type);
-            
-            var playerToUpdate = GetPlayerFromGame(game, discordId);
-            playerToUpdate.InitializeCurrentPokemon(pokemon, pokeType, pokemonId);
-        }
-
-        private BattlePlayer GetPlayerFromGame(PokeBattleGame game, ulong discordId)
-        {
-            return discordId == game.PlayerOne.DiscordId ? game.PlayerOne : game.PlayerTwo;
-        }
-
-        private async Task<Embed> CreateChoosePokemonMessage(ulong userId)
-        {
-            var userForReturn = await _userController.GetUserByDiscordId(userId);
-            string message = "Type `!choose id#` where 'id#' is the pokemon's corresponding Id.\n\n```╦\n║ Id • Name • Lvl\n╫────────────────────────\n";
-            foreach (var pokemon in userForReturn.PokeCollection)
-            {
-                message += ($"║ {pokemon.Id} • {pokemon.Name} • {pokemon.Level}\n╫────────────────────────\n");
-            }
-            message += "╩```";
-
-            var embeddedMessage = new EmbedBuilder()
-                .WithAuthor(_discord.CurrentUser)
-                .WithTitle("▼ Choose your pokemon!")
-                .WithDescription(message)
-                .WithFooter(footer => footer.Text = "Sent ")
-                .WithCurrentTimestamp()
-                .Build();
-
-            return embeddedMessage;
         }
     }
 }

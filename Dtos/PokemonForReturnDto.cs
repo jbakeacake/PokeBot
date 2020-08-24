@@ -19,15 +19,8 @@ namespace PokeBot.Dtos
         public float SpecialDefense { get; set; }
         public float Speed { get; set; }
         public string Type { get; set; }
-        public Move[] moves { get; set; }
-        public string Url { get; set; }
+        public int[] MoveIds { get; set; }
 
         public PokemonForReturnDto() { }
-        public PokemonForReturnDto(int pokeId, string name, string url)
-        {
-            PokeId = pokeId;
-            Name = name;
-            Url = url;
-        }
     }
 }

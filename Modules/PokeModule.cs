@@ -9,7 +9,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using PokeBot.Controllers;
 using PokeBot.Dtos;
-using PokeBot.Services.Helpers;
+using PokeBot.Helpers;
 
 namespace PokeBot.Modules
 {
@@ -65,21 +65,6 @@ namespace PokeBot.Modules
 
             var res = await ReplyAsync(message);
         }
-
-        // [Command("test")]
-        // public async Task Test()
-        // {
-        //     var msg = CreateEmbeddedMessage();
-        //     var res = await Context.Channel.SendMessageAsync(embed: msg);
-        //     var move_1 = new Emoji("1️⃣");
-        //     var move_2 = new Emoji("2️⃣");
-        //     var move_3 = new Emoji("3️⃣");
-        //     var move_4 = new Emoji("4️⃣");
-        //     await res.AddReactionAsync(move_1);
-        //     await res.AddReactionAsync(move_2);
-        //     await res.AddReactionAsync(move_3);
-        //     await res.AddReactionAsync(move_4);
-        // }
 
         private Dictionary<string, int> GetInventory(UserForReturnDto userData)
         {

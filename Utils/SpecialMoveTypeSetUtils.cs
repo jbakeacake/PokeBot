@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace PokeBot.PokeBattle.Utils
+namespace PokeBot.Utils
 {
     internal static class SpecialMoveTypeSetUtils
     {

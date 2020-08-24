@@ -73,9 +73,10 @@ namespace PokeBot.Data
             throw new NotImplementedException();
         }
 
-        public Task<MoveData> GetMoveDataByMoveId(int moveId)
+        public async Task<MoveData> GetMoveDataByMoveId(int moveId)
         {
-            throw new NotImplementedException();
+            var moveData = await _context.MoveData_Tbl.AsQueryable().FirstOrDefaultAsync(x => x.MoveId == moveId);
+            return moveData;
         }
 
         public Task<PokeBattleData> GetPokeBattleDataByGUID(Guid battleId)
@@ -83,9 +84,10 @@ namespace PokeBot.Data
             throw new NotImplementedException();
         }
 
-        public Task<PokemonData> GetPokemonDataByPokeId(int pokeId)
+        public async Task<PokemonData> GetPokemonDataByPokeId(int pokeId)
         {
-            throw new NotImplementedException();
+            var pokemonData = await _context.PokeData_Tbl.AsQueryable().FirstOrDefaultAsync(x => x.PokeId == pokeId);
+            return pokemonData;
         }
 
         public Task<IEnumerable<MoveData>> GetMoves()

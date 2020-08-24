@@ -1,7 +1,10 @@
+using PokeBot.PokeBattle.Entities;
+
 namespace PokeBot.PokeBattle.Moves.Ailments
 {
-    public class IAilment
+    public interface IAilment
     {
-        
+        void ApplyAilment(ICombative receiver);
+        bool IsRecoverySuccessful();
     }
 }

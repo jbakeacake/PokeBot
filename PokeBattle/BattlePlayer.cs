@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using PokeBot.Dtos;
 using PokeBot.Models;
 using PokeBot.PokeBattle.Entities;
+using PokeBot.PokeBattle.Moves;
 
 namespace PokeBot.PokeBattle
 {
@@ -17,9 +18,9 @@ namespace PokeBot.PokeBattle
             DiscordId = discordId;
         }
 
-        public void InitializeCurrentPokemon(PokemonForReturnDto pokemonForReturn, PokeTypeForReturnDto pokeType, int id)
+        public void InitializeCurrentPokemon(PokemonForReturnDto pokemonForReturn, PokeTypeForReturnDto pokeType, Move[] moves, int id)
         {
-            CurrentPokemon = new PokeEntity(id, pokemonForReturn, pokeType);
+            CurrentPokemon = new PokeEntity(id, pokemonForReturn, pokeType, moves);
         }
 
         public void RewardWinningPokemonExperience(PokeEntity victim)

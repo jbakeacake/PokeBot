@@ -7,7 +7,9 @@ namespace PokeBot.PokeBattle.Entities
     {
         void CombatAction(ICombative other, Move move);
         void TakeDamage(int damage);
-        void ReceiveEffect(Effect move);
+        void ReceiveEffect(Move move);
+        void SetDisabled(bool isDisabled);
+        bool isDisabled();
         bool isDead();
         bool isHalfDamageFrom(string type);
         bool isHalfDamageTo(string type);
