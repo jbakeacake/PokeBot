@@ -1,6 +1,14 @@
 # PokeBot
 A Discord Pokemon bot that sporadically displays Pokemon throughout the day. Any user can use a command to display their collection or catch a new pokemon!
 
+## Features
+> Collect them All! (Gen I Only)
+Every hour, you have the opportunity to catch some of your favorite Pokemon from the first original 151 pokemon.
+
+> Duel Each Other and Become the Very Best (Still Testing)
+_Note: This feature is not entirely complete, though the full combat cycle is ready_
+Challenge your fellow discord members with PokeBot's dueling system. Train and level up your Pokemon, increasing their power and stats along the way.
+
 # Quick Start
 > **Pre-Setup**
 
