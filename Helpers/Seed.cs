@@ -71,7 +71,7 @@ namespace PokeBot.Helpers
             return await context.SaveChangesAsync() > 0;
         }
 
-        public static void SetStats(Pokemon pokemon, PokemonData data)
+        private static void SetStats(Pokemon pokemon, PokemonData data)
         {
             pokemon.MaxHP = GetRandomStat(data.MaxHP);
             pokemon.Attack = GetRandomStat(data.Attack);
@@ -81,10 +81,19 @@ namespace PokeBot.Helpers
             pokemon.Speed = GetRandomStat(data.Speed);
         }
 
-        public static void SetRandomMoveIds(Pokemon pokemon, PokemonData data)
+        private async static void SetRandomMoveIds(Pokemon pokemon, PokemonData data)
         {
             int[] arrOfMoveIds = new int[4];
-            //TODO:
+
+            Random rand = new Random();
+            var pokeData = await _context.PokeData_Tbl.Include(x => x.MoveLinks).AsQueryable().FirstOrDefaultAsync(x => x.PokeId == pokemon.PokeId);
+            var moveCount = pokeData.MoveLinks.Count();
+            int skips = rand.Next(1, moveCount+1);
+            for(int i = 0; i < arrOfMoveIds.Length; i++)
+            {
+                arrOfMoveIds[i] = pokeData.MoveLinks.Skip(skips).Take(1).First().MoveId;
+                skips = rand.Next(1, moveCount+1);
+            }
 
             pokemon.MoveId_One = arrOfMoveIds[0];
             pokemon.MoveId_Two = arrOfMoveIds[1];
@@ -92,7 +101,20 @@ namespace PokeBot.Helpers
             pokemon.MoveId_Four = arrOfMoveIds[3];
         }
 
-        public static float GetRandomStat(float base_stat)
+        public static async Task<bool> SeedMoveData(DataContext context, IMapper mapper)
+        {
+            for(int i = 1; i < MOVEDATA_ID_RANGE; i++)
+            {
+                MoveDataForCreationDto md = await GetMoveDataFromAPI(i);
+                var mdForCreation = mapper.Map<MoveData>(md);
+                context.MoveData_Tbl.Add(mdForCreation);
+            }
+
+            return await context.SaveChangesAsync() > 0;
+        }
+
+
+        private static float GetRandomStat(float base_stat)
         {
             Random rand = new Random();
             return base_stat + (float)(rand.Next(1, 20));
