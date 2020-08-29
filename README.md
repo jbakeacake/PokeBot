@@ -8,7 +8,7 @@ Every hour, you have the opportunity to catch some of your favorite Pokemon from
 
 ### Duel Each Other and Become the Very Best (Still Testing)
 
-_Note: This feature is not entirely complete, though the full combat cycle is ready_
+_Note: This feature is not entirely complete, though the full combat cycle is ready._ <br/>
 Challenge your fellow discord members with PokeBot's dueling system. Train and level up your Pokemon, increasing their power and stats along the way.
 
 # Quick Start
