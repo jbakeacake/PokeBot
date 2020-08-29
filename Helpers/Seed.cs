@@ -83,7 +83,13 @@ namespace PokeBot.Helpers
 
         public static void SetRandomMoveIds(Pokemon pokemon, PokemonData data)
         {
-            // TODO:
+            int[] arrOfMoveIds = new int[4];
+            //TODO:
+
+            pokemon.MoveId_One = arrOfMoveIds[0];
+            pokemon.MoveId_Two = arrOfMoveIds[1];
+            pokemon.MoveId_Three = arrOfMoveIds[2];
+            pokemon.MoveId_Four = arrOfMoveIds[3];
         }
 
         public static float GetRandomStat(float base_stat)
