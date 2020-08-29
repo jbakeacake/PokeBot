@@ -6,13 +6,11 @@ namespace PokeBot.PokeBattle.Moves.Ailments
     public abstract class Ailment : IAilment
     {
         public string Name { get; set; }
-        public string Description { get; set; }
         public float AilmentChance { get; set; }
         public int ChanceToRecover { get; set; }
-        public Ailment(string name, string description, float ailmentChance, int chanceToRecover)
+        public Ailment(string name, float ailmentChance, int chanceToRecover)
         {
             Name = name;
-            Description = description;
             AilmentChance = ailmentChance;
             ChanceToRecover = chanceToRecover;
         }
@@ -25,5 +23,6 @@ namespace PokeBot.PokeBattle.Moves.Ailments
             return rollToRecover <= ChanceToRecover;
         }
         public abstract void ApplyAilment(ICombative receiver);
+        public abstract void RemoveFrom(PokeEntity illPokemon);
     }
 }

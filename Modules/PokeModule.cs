@@ -10,18 +10,23 @@ using Microsoft.Extensions.DependencyInjection;
 using PokeBot.Controllers;
 using PokeBot.Dtos;
 using PokeBot.Helpers;
+using PokeBot.PokeBattle.Entities;
+using PokeBot.PokeBattle.Moves;
+using PokeBot.Utils;
 
 namespace PokeBot.Modules
 {
     public class PokeModule : ModuleBase<SocketCommandContext>
     {
-        public UserController _controller { get; set; }
+        public UserController _userController { get; set; }
+        public PokemonController _pokemonController { get; set; }
         public DiscordSocketClient _discord { get; set; }
         public IServiceProvider _provider { get; set; }
-        public PokeModule(IServiceProvider provider, DiscordSocketClient discord, UserController controller)
+        public PokeModule(IServiceProvider provider, DiscordSocketClient discord, UserController userController, PokemonController pokemonController)
         {
             _discord = discord;
-            _controller = controller;
+            _userController = userController;
+            _pokemonController = pokemonController;
             _provider = provider;
         }
         [Command("catch")]
@@ -35,13 +40,13 @@ namespace PokeBot.Modules
             }
 
             var user = Context.Message.Author;
-            if (!(await _controller.UserExists(user.Id)))
+            if (!(await _userController.UserExists(user.Id)))
                 await RegisterUser(user);
 
             PokemonForCreationDto pokemonForCreation = new PokemonForCreationDto(cwp._pokemon.PokeId, cwp._pokemon.Name);
             cwp.SetIsCaptured(true);
-            
-            await _controller.AddToUserPokeCollectionByDiscordId(user.Id, pokemonForCreation);
+
+            await _userController.AddToUserPokeCollectionByDiscordId(user.Id, pokemonForCreation);
             await ReplyAsync($":medal: Congratulations, {user.Username}! You've successfully caught a `{cwp._pokemon.Name}`.\n\nType `!inventory` to see it in your inventory!");
         }
 
@@ -49,94 +54,92 @@ namespace PokeBot.Modules
         public async Task Inventory()
         {
             var user = Context.Message.Author;
-            if (!(await _controller.UserExists(user.Id)))
+            if (!(await _userController.UserExists(user.Id)))
             {
                 await RegisterUser(user);
                 await ReplyAsync($"Your inventory is empty. Go catch some pokemon!");
                 return;
             }
 
-            var userData = await _controller.GetUserByDiscordId(user.Id);
-            Dictionary<string, int> inventory = GetInventory(userData);
-
+            var userData = await _userController.GetUserByDiscordId(user.Id);
+            var uniqueCount = userData.PokeCollection.Select(x => x.Name).Distinct().Count();
             var message = $":globe_with_meridians:` HELLO, {user.Username.ToUpper()}. WELCOME TO YOUR POKEMON STORAGE UNIT. \nBELOW YOU CAN FIND A LIST OF ALL THE POKEMON YOU'VE CAUGHT...`\n\n";
-            message += $":ballot_box:`POKE STORAGE | Unique Pokemon Found: {inventory.Keys.Count} / 151`\n";
-            message += InventoryToString(inventory);
+            message += $":ballot_box:`POKE STORAGE | Unique Pokemon Found: {uniqueCount} / 151`\n";
+            message += InventoryToString(userData);
 
             var res = await ReplyAsync(message);
         }
 
-        private Dictionary<string, int> GetInventory(UserForReturnDto userData)
+        [Command("detail")]
+        public async Task Detail(int id)
         {
-            var inventory = new Dictionary<string, int>();
-            foreach (var pokemon in userData.PokeCollection)
+            var user = Context.Message.Author;
+            if (!(await _userController.UserExists(user.Id)))
             {
-                if (!inventory.ContainsKey(pokemon.Name))
-                {
-                    inventory.Add(pokemon.Name, 1);
-                }
-                else
-                {
-                    inventory[pokemon.Name] += 1;
-                }
+                await RegisterUser(user);
+                await ReplyAsync($"Your inventory is empty. Go catch some pokemon!");
+                return;
             }
 
-            return inventory;
+            var userData = await _userController.GetUserByDiscordId(user.Id);
+
+            if(!userData.PokeCollection.Any(x => x.Id == id)) return;
+
+            var pokemonForReturn = userData.PokeCollection.FirstOrDefault(x => x.Id == id);
+            var pokeTypeForReturn = await _pokemonController.GetPokeType(pokemonForReturn.Type);
+            var moves = await GetMovesFromIds(pokemonForReturn.MoveIds);
+            var pokemon = new PokeEntity(id, pokemonForReturn, pokeTypeForReturn, moves);
+        
+            var embeddedMessage = EmbeddedMessageUtil.CreatePokemonDetailEmbed(Context.Client.CurrentUser, pokemon);
+            await user.SendMessageAsync(embed: embeddedMessage);
         }
 
-        private string InventoryToString(Dictionary<string, int> inventory)
+        private string InventoryToString(UserForReturnDto userData)
         {
             var message = "```";
-            foreach (var record in inventory.OrderBy(r => r.Key))
+            foreach (var pokemon in userData.PokeCollection.OrderBy(x => x.Name))
             {
-                message += $"{record.Key} | x{record.Value} \n";
+                message += $"◽ {pokemon.Id} | {pokemon.Name.ToUpper()} | Lv. {pokemon.Level}\n";
             }
-            message += "```";
 
+            message += "```";
             return message;
         }
 
         private async Task RegisterUser(SocketUser user)
         {
-            await _controller.RegisterUser(user.Id, user.Username);
+            await _userController.RegisterUser(user.Id, user.Username);
             System.Console.WriteLine($"Registered user {user.Username}");
         }
 
-        private Embed CreateEmbeddedMessage()
+        //TODO : MOVE TO HELPER OBJECT
+        private async Task<Move[]> GetMovesFromIds(int[] moveIds)
         {
-            var fieldOne = new EmbedFieldBuilder()
-                .WithName("`█████████`")
-                .WithValue("`Ditto: Lvl 1`\n\n");
-            var fieldEmpty1 = new EmbedFieldBuilder()
-                .WithName(".")
-                .WithValue(".");
-            var fieldEmpty2 = new EmbedFieldBuilder()
-                .WithName(".")
-                .WithValue(".");
-            var fieldEmpty3 = new EmbedFieldBuilder()
-                .WithName(".")
-                .WithIsInline(true)
-                .WithValue(".");
-            var fieldEmpty4 = new EmbedFieldBuilder()
-                .WithName(".")
-                .WithIsInline(true)
-                .WithValue(".");
-            var fieldTwo = new EmbedFieldBuilder()
-                .WithIsInline(true)
-                .WithName("`████`")
-                .WithValue("`Ditto: Lvl 1`");
-            
-            var moves = "▄▄▄▄▄▄▄▄▄▄▄\n\n►► Moves ◄◄\n║ 1.) Bingo\n║ 2.) Bango\n║ 3.) Bongo\n║ 4.) Bish";
+            Move[] arr = new Move[moveIds.Length];
+            for (int i = 0; i < moveIds.Length; i++)
+            {
+                var moveData = await _pokemonController.GetMoveData(moveIds[i]);
+                arr[i] = CreateMove(moveData);
+            }
 
-
-            var embeddedMessage = new EmbedBuilder()
-                .WithFields(new[] { fieldOne, fieldEmpty1, fieldEmpty2, fieldEmpty3, fieldEmpty4, fieldTwo })
-                .WithFooter(footer => footer.Text = moves)
-                .WithThumbnailUrl("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/132.png")
-                .WithImageUrl("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/132.png")
+            return arr;
+        }
+        //TODO : MOVE TO HELPER OBJECT
+        private Move CreateMove(MoveDataForReturnDto moveData)
+        {
+            return new MoveBuilder()
+                .Name(moveData.Name)
+                .StageMultiplierForAccuracy(1)
+                .Accuracy(moveData.Accuracy)
+                .EffectChance(moveData.Effect_Chance)
+                .Ailment(moveData.AilmentName)
+                .Power(moveData.Power)
+                .PP(moveData.PP)
+                .Type(moveData.Type)
+                .StatChangeName(moveData.StatChangeName)
+                .StatChangeValue(moveData.StatChangeValue)
+                .TargetsOther(moveData.Target)
                 .Build();
-
-            return embeddedMessage;
         }
     }
 }

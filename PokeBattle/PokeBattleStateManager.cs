@@ -15,9 +15,11 @@ namespace PokeBot.PokeBattle
             _currentState = PokeBattleStates.GAME_START;
         }
 
+
+
         private PokeBattleStates DetermineFirstTurn(PokeEntity playerOne, PokeEntity playerTwo)
         {
-            return playerOne.Stats.Skills["Speed"].Value >= playerTwo.Stats.Skills["Speed"].Value ? PokeBattleStates.PLAYER_ONE 
+            return playerOne.Stats.Skills["speed"].Value >= playerTwo.Stats.Skills["speed"].Value ? PokeBattleStates.PLAYER_ONE
                 : PokeBattleStates.PLAYER_TWO;
         }
 
@@ -58,31 +60,40 @@ namespace PokeBot.PokeBattle
                     }
                 case PokeBattleStates.PLAYER_ONE:
                     {
-                        doPlayerOneMove(moveIndex);
-                        UpdateState(PokeBattleStates.PLAYER_TWO);
+                        DoPlayerMove(moveIndex, _playerOne, _playerTwo);
+                        var nextState = isPlayerDisabled(_playerTwo) ? PokeBattleStates.PLAYER_ONE : PokeBattleStates.PLAYER_TWO;
+                        _playerTwo.CurrentPokemon.TryToRecoverAilments();
+                        UpdateState(nextState);
                         DetermineConclusion(_playerOne, _playerTwo);
                         break;
                     }
                 case PokeBattleStates.PLAYER_TWO:
                     {
-                        doPlayerTwomove(moveIndex);
-                        UpdateState(PokeBattleStates.PLAYER_ONE);
+                        DoPlayerMove(moveIndex, _playerTwo, _playerOne);
+                        var nextState = isPlayerDisabled(_playerOne) ? PokeBattleStates.PLAYER_TWO : PokeBattleStates.PLAYER_ONE;
+                        UpdateState(nextState);
+                        _playerOne.CurrentPokemon.TryToRecoverAilments();
                         DetermineConclusion(_playerOne, _playerTwo);
                         break;
                     }
                 case PokeBattleStates.PLAYER_ONE_WIN:
                     {
                         System.Console.WriteLine("PLAYER ONE WIN");
-                        doPlayerOneWin();
+                        doPlayerWin(_playerOne, _playerTwo);
                         break;
                     }
                 case PokeBattleStates.PLAYER_TWO_WIN:
                     {
                         System.Console.WriteLine("PLAYER TWO WIN");
-                        doPlayerTwoWin();
+                        doPlayerWin(_playerTwo, _playerOne);
                         break;
                     }
             }
+        }
+
+        private bool isPlayerDisabled(BattlePlayer player)
+        {
+            return player.CurrentPokemon.Disabled;
         }
 
         private void doGameStart()
@@ -91,28 +102,23 @@ namespace PokeBot.PokeBattle
             UpdateState(next);
         }
 
-        private void doPlayerOneMove(int moveIndex)
+        private void DoPlayerMove(int moveIndex, BattlePlayer attacker, BattlePlayer defender)
         {
-            var pokemon = _playerOne.CurrentPokemon;
-            var move = pokemon.Moves[moveIndex-1];
-            System.Console.WriteLine($"{pokemon.Name} used {move.Name}");
-        }
+            var attackingPokemon = attacker.CurrentPokemon;
+            var defendingPokemon = defender.CurrentPokemon;
 
-        private void doPlayerTwomove(int moveIndex)
-        {
-            var pokemon = _playerTwo.CurrentPokemon;
-            var move = pokemon.Moves[moveIndex-1];
-            System.Console.WriteLine($"{pokemon.Name} used {move.Name}");
-        }
+            var attackerMove = attackingPokemon.Moves[moveIndex - 1];
 
-        private void doPlayerTwoWin()
-        {
-            _playerTwo.RewardWinningPokemonExperience(_playerOne.CurrentPokemon);
+            attackingPokemon.CombatAction(defendingPokemon, attackerMove);
+            attackingPokemon.TriggerAilments(defendingPokemon);
+            defendingPokemon.TriggerAilments(attackingPokemon);
         }
-
-        private void doPlayerOneWin()
+        private void doPlayerWin(BattlePlayer winner, BattlePlayer loser)
         {
-            _playerOne.RewardWinningPokemonExperience(_playerTwo.CurrentPokemon);
+            winner.RewardWinningPokemonExperience(loser.CurrentPokemon);
+            loser.RewardLosingPokemonExperience(loser.CurrentPokemon);
+            winner.DeterminePokemonLevelUp();
+            loser.DeterminePokemonLevelUp();
         }
     }
 }

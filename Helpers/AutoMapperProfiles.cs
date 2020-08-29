@@ -25,6 +25,8 @@ namespace PokeBot.Helpers
 
             CreateMap<PokemonForCreationDto, Pokemon>();
 
+            CreateMap<PokemonForUpdateDto, Pokemon>();
+
             CreateMap<PokemonData, PokemonDataForReturnDto>();
             CreateMap<MoveData, MoveDataForReturnDto>();
             CreateMap<MoveLink, MoveLinkForReturnDto>();

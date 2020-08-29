@@ -11,11 +11,17 @@ namespace PokeBot.PokeBattle
     {
         public PokemonController PokemonController { get; set; }
         public UserController UserController { get; set; }
+        public Guid BattleTokenId { get; set; }
         public BattlePlayer PlayerOne { get; set; }
         public BattlePlayer PlayerTwo { get; set; }
         public PokeBattleStateManager StateManager { get; set; }
-        public PokeBattleGame(PokemonController pokemonController, UserController userController)
+        public ulong PlayerOneLogId { get; set; }
+        public ulong PlayerTwoLogId { get; set; }
+        public ulong PlayerOneSceneId { get; set; }
+        public ulong PlayerTwoSceneId { get; set; }
+        public PokeBattleGame(Guid battleTokenId, PokemonController pokemonController, UserController userController)
         {
+            BattleTokenId = battleTokenId;
             PokemonController = pokemonController;
             UserController = userController;
         }
@@ -32,10 +38,10 @@ namespace PokeBot.PokeBattle
             StateManager = new PokeBattleStateManager(PlayerOne, PlayerTwo);
             await PokemonController.RegisterPokeBattle(pokeBattleForCreationDto);
         }
-        
+
         public BattlePlayer GetPlayer(ulong discordId)
         {
-            if(PlayerOne.DiscordId == discordId)
+            if (PlayerOne.DiscordId == discordId)
             {
                 return PlayerOne;
             }
@@ -46,6 +52,24 @@ namespace PokeBot.PokeBattle
             else
             {
                 throw new Exception($"Failed to get Player. Unknown player of id {discordId}.");
+            }
+        }
+
+        public bool isPlayersTurn(ulong discordId)
+        {
+            if (PlayerOne.DiscordId == discordId
+                && StateManager._currentState == PokeBattleStates.PLAYER_ONE)
+            {
+                return true;
+            }
+            else if (PlayerTwo.DiscordId == discordId
+                && StateManager._currentState == PokeBattleStates.PLAYER_TWO)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 
@@ -78,6 +102,20 @@ namespace PokeBot.PokeBattle
             }
 
             return playerToReturn;
+        }
+
+        public BattlePlayer GetWinningPlayer()
+        {
+            if (!isGameOver()) return null;
+
+            return StateManager._currentState == PokeBattleStates.PLAYER_ONE_WIN ? PlayerOne : PlayerTwo;
+        }
+
+        public BattlePlayer GetLosingPlayer()
+        {
+            if (!isGameOver()) return null;
+
+            return StateManager._currentState == PokeBattleStates.PLAYER_ONE_WIN ? PlayerTwo : PlayerOne;
         }
 
         public async Task ClearTokens()

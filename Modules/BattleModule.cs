@@ -70,8 +70,13 @@ namespace PokeBot.Modules
                 game.RunGame(-1);
                 //Notify both players that the game is starting:
                 var versusCard = EmbeddedMessageUtil.CreateVersusPokemonEmbed(Context.Client.CurrentUser, game.PlayerOne, game.PlayerTwo);
+                var playerOneBattleCard = await EmbeddedMessageUtil.CreateBattleSceneEmbed(Context.Client.CurrentUser, game.PlayerOne, game.PlayerTwo, _pokemonController);
+                var playerTwoBattleCard = await EmbeddedMessageUtil.CreateBattleSceneEmbed(Context.Client.CurrentUser, game.PlayerTwo, game.PlayerOne, _pokemonController);
                 await _gameHandler.SendPlayerMessage(versusCard, game.PlayerOne.DiscordId);
                 await _gameHandler.SendPlayerMessage(versusCard, game.PlayerTwo.DiscordId);
+                //Send each player battle scenes:
+                await _gameHandler.SendPlayersBattleScene(game);
+
                 //Notify the player that is going first to make a move:
                 var nextPlayer = game.GetPlayerForMove();
                 await _gameHandler.NotifyPlayerOfTurn(nextPlayer.DiscordId);
@@ -81,19 +86,19 @@ namespace PokeBot.Modules
                 await _gameHandler.SendPlayerAwaitingOnOther(user.Id);
             }
         }
-
+        //TODO : MOVE TO HELPER OBJECT
         private async Task<Move[]> GetMovesFromIds(int[] moveIds)
         {
             Move[] arr = new Move[moveIds.Length];
-            for(int i = 0; i < moveIds.Length; i++)
+            for (int i = 0; i < moveIds.Length; i++)
             {
-                var moveData = await _pokemonController.GetMoveData(moveIds[i]); 
+                var moveData = await _pokemonController.GetMoveData(moveIds[i]);
                 arr[i] = CreateMove(moveData);
             }
 
             return arr;
         }
-
+        //TODO : MOVE TO HELPER OBJECT
         private Move CreateMove(MoveDataForReturnDto moveData)
         {
             return new MoveBuilder()

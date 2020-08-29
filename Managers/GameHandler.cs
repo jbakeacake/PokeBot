@@ -6,6 +6,7 @@ using Discord.WebSocket;
 using PokeBot.Controllers;
 using PokeBot.Dtos;
 using PokeBot.PokeBattle;
+using PokeBot.PokeBattle.Entities;
 using PokeBot.Utils;
 
 namespace PokeBot.Managers
@@ -13,7 +14,8 @@ namespace PokeBot.Managers
     public class GameHandler : Handler
     {
         public Dictionary<Guid, PokeBattleGame> _games { get; set; }
-        private Dictionary<ulong, InvitationGroup> _pendingInvitations { get; set; }
+        private Dictionary<ulong, InvitationGroup> _pendingInvitations { get; set; } // Key: Message Id, val: 2 user Ids
+        public HashSet<ulong> _pendingPlayers { get; set; }
         public HashSet<ulong> _battlingPlayers { get; set; }
         public PokemonController _pokemonController { get; set; }
         public UserController _userController { get; set; }
@@ -26,13 +28,31 @@ namespace PokeBot.Managers
 
             _games = new Dictionary<Guid, PokeBattleGame>();
             _pendingInvitations = new Dictionary<ulong, InvitationGroup>();
+            _pendingPlayers = new HashSet<ulong>();
             _battlingPlayers = new HashSet<ulong>();
+        }
+
+        public async Task UpdateUserPokemon(PokeEntity pokemon)
+        {
+            PokemonForUpdateDto pokemonForUpdate = new PokemonForUpdateDto
+            {
+                Name = pokemon.Name,
+                MaxHP = pokemon.Stats.MaxHP,
+                Level = pokemon.Stats.Level,
+                Experience = pokemon.Stats.Experience,
+                Attack = pokemon.Stats.Skills["attack"].Value,
+                Defense = pokemon.Stats.Skills["defense"].Value,
+                SpecialAttack = pokemon.Stats.Skills["special-attack"].Value,
+                SpecialDefense = pokemon.Stats.Skills["special-defense"].Value,
+                Speed = pokemon.Stats.Skills["speed"].Value
+            };
+            await _pokemonController.UpdatePokemon(pokemon.Id, pokemonForUpdate);
         }
 
         public async Task NotifyPlayerOfTurn(ulong discordId)
         {
             var message = await _discord.GetUser(discordId).SendMessageAsync("YOUR TURN");
-            foreach(var key in MoveSetEmojiMapUtil.GetMoveSetEmojiMap.Keys)
+            foreach (var key in MoveSetEmojiMapUtil.GetMoveSetEmojiMap.Keys)
             {
                 await message.AddReactionAsync(key);
             }
@@ -47,14 +67,39 @@ namespace PokeBot.Managers
             await UpdateUser(battleTokenId, invitation.PlayerTwoId);
 
             //Create the game for our dictionary:
-            PokeBattleGame gameToAdd = new PokeBattleGame(_pokemonController, _userController);
+            PokeBattleGame gameToAdd = new PokeBattleGame(battleTokenId, _pokemonController, _userController);
             gameToAdd.PlayerOne = new BattlePlayer(invitation.PlayerOneId);
             gameToAdd.PlayerTwo = new BattlePlayer(invitation.PlayerTwoId);
             _games.Add(battleTokenId, gameToAdd);
         }
 
+        public async Task RemoveGame(Guid battleTokenId)
+        {
+            var game = _games[battleTokenId];
+            _pendingPlayers.Remove(game.PlayerOne.DiscordId);
+            _pendingPlayers.Remove(game.PlayerTwo.DiscordId);
+            _battlingPlayers.Remove(game.PlayerOne.DiscordId);
+            _battlingPlayers.Remove(game.PlayerTwo.DiscordId);
+            _games.Remove(battleTokenId);
+            await _pokemonController.RemovePokeBattle(battleTokenId);
+        }
+
         public async Task SendInviteToPlayer(SocketUser sender, SocketUser receiver)
         {
+            if (_pendingPlayers.Contains(sender.Id))
+            {
+                System.Console.WriteLine($"{sender.Id} is busy");
+                var busyMsg = @"You are currently busy right now. You can cancel your current invitation or game by typing `!cancel`. **Beware**, if you leave the middle of a game, your pokemon will lose experience.";
+                await SendPlayerMessage(busyMsg, sender.Id);
+                return;
+            }
+            else if (_pendingPlayers.Contains(receiver.Id))
+            {
+                System.Console.WriteLine($"{receiver.Id} is busy");
+                var busyMsg = $"**{receiver.Username}** is currently busy at the moment. Try again later!";
+                await SendPlayerMessage(busyMsg, sender.Id);
+                return;
+            }
             //Send the invitation:
             var message = EmbeddedMessageUtil.CreateInvitationMessage(_discord.CurrentUser, sender, receiver);
             var invitation = await SendPlayerMessage(message, receiver.Id);
@@ -68,6 +113,8 @@ namespace PokeBot.Managers
             };
 
             _pendingInvitations.Add(invitation.Id, invGroup);
+            _pendingPlayers.Add(sender.Id);
+            _pendingPlayers.Add(receiver.Id);
         }
 
         public async Task SendPokemonListToPlayer(ulong discordId)
@@ -89,9 +136,29 @@ namespace PokeBot.Managers
             await SendPlayerMessage(message, discordId);
         }
 
+        public async Task SendWinnerCard(BattlePlayer player)
+        {
+            var message = EmbeddedMessageUtil.CreateWinningPlayerEmbed(_discord.CurrentUser, player);
+            await SendPlayerMessage(message, player.DiscordId);
+        }
+
+        public async Task SendLoserCard(BattlePlayer player)
+        {
+            var message = EmbeddedMessageUtil.CreateLosingPlayerEmbed(_discord.CurrentUser, player);
+            await SendPlayerMessage(message, player.DiscordId);
+        }
+
+        public async Task SendPlayersBattleScene(PokeBattleGame game)
+        {
+            var playerOneScene = await EmbeddedMessageUtil.CreateBattleSceneEmbed(_discord.CurrentUser, game.PlayerOne, game.PlayerTwo, _pokemonController);
+            var playerTwoScene = await EmbeddedMessageUtil.CreateBattleSceneEmbed(_discord.CurrentUser, game.PlayerTwo, game.PlayerOne, _pokemonController);
+
+            await SendPlayerMessage(playerOneScene, game.PlayerOne.DiscordId);
+            await SendPlayerMessage(playerTwoScene, game.PlayerTwo.DiscordId);
+        }
         public bool AreBothPlayersReady(Guid battleTokenId)
         {
-            if(!_games.ContainsKey(battleTokenId)) return false;
+            if (!_games.ContainsKey(battleTokenId)) return false;
 
             return _games[battleTokenId].isGameReady();
         }
@@ -102,7 +169,7 @@ namespace PokeBot.Managers
         }
         public (ulong, ulong) GetPendingPlayersFromInvitationGroup(ulong invitationId)
         {
-            if(!_pendingInvitations.ContainsKey(invitationId)) return (0,0);
+            if (!_pendingInvitations.ContainsKey(invitationId)) return (0, 0);
             var invitationGroup = _pendingInvitations[invitationId];
             return (invitationGroup.PlayerOneId, invitationGroup.PlayerTwoId);
         }
@@ -110,6 +177,11 @@ namespace PokeBot.Managers
         {
             UserForUpdateDto userForUpdate = new UserForUpdateDto(battleTokenId);
             await _userController.UpdateUser(discordId, userForUpdate);
+        }
+
+        public void RemovePendingInvite(ulong invitationId)
+        {
+            _pendingInvitations.Remove(invitationId);
         }
 
         struct InvitationGroup

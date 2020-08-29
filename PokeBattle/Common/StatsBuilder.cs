@@ -34,44 +34,44 @@ namespace PokeBot.PokeBattle.Common
         }
         public StatsBuilder Attack(float attack)
         {
-            var skill = new Skill("Attack", attack, 0, 1.0f);
-            _stats.Skills.Add("Attack", skill);
+            var skill = new Skill("attack", attack, 0, 1.0f);
+            _stats.Skills.Add("attack", skill);
             return this;
         }
         public StatsBuilder Defense(float defense)
         {
-            var skill = new Skill("Defense", defense, 0, 1.0f);
-            _stats.Skills.Add("Defense", skill);
+            var skill = new Skill("defense", defense, 0, 1.0f);
+            _stats.Skills.Add("defense", skill);
             return this;
         }
         public StatsBuilder SpecialAttack(float specialAttack)
         {
-            var skill = new Skill("SpecialAttack", specialAttack, 0, 1.0f);
-            _stats.Skills.Add("SpecialAttack", skill);
+            var skill = new Skill("special-attack", specialAttack, 0, 1.0f);
+            _stats.Skills.Add("special-attack", skill);
             return this;
         }
         public StatsBuilder SpecialDefense(float specialDefense)
         {
-            var skill = new Skill("SpecialDefense", specialDefense, 0, 1.0f);
-            _stats.Skills.Add("SpecialDefense", skill);
+            var skill = new Skill("special-defense", specialDefense, 0, 1.0f);
+            _stats.Skills.Add("special-defense", skill);
             return this;
         }
         public StatsBuilder Speed(float speed)
         {
-            var skill = new Skill("Speed", speed, 0, 1.0f);
-            _stats.Skills.Add("Speed", skill);
+            var skill = new Skill("speed", speed, 0, 1.0f);
+            _stats.Skills.Add("speed", skill);
             return this;
         }
         public StatsBuilder Accuracy(float accuracy)
         {
-            var skill = new Skill("Accuracy", accuracy, 0, 1.0f);
-            _stats.Skills.Add("Accuracy", skill);
+            var skill = new Skill("accuracy", accuracy, 0, 1.0f);
+            _stats.Skills.Add("accuracy", skill);
             return this;
         }
         public StatsBuilder Evasion(float evasion)
         {
-            var skill = new Skill("Evasion", evasion, 0, 1.0f);
-            _stats.Skills.Add("Evasion", skill);
+            var skill = new Skill("evasion", evasion, 0, 1.0f);
+            _stats.Skills.Add("evasion", skill);
             return this;
         }
     }

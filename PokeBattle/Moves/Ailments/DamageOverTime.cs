@@ -6,9 +6,8 @@ namespace PokeBot.PokeBattle.Moves.Ailments
     {
         private readonly float DAMAGE = 0.125f;
         public DamageOverTime(string name, 
-            string description, 
             float ailmentChance,
-            int chanceToRecover) : base(name, description, ailmentChance, chanceToRecover)
+            int chanceToRecover) : base(name, ailmentChance, chanceToRecover)
         {
         }
 
@@ -16,6 +15,11 @@ namespace PokeBot.PokeBattle.Moves.Ailments
         {
             int damage = (int)(receiver.GetStats().MaxHP * (DAMAGE));
             receiver.TakeDamage(damage);
+        }
+
+        public override void RemoveFrom(PokeEntity illPokemon)
+        {
+            illPokemon.CurrentAilments.Remove(this.Name);
         }
     }
 }

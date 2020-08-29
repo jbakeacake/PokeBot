@@ -30,6 +30,8 @@ namespace PokeBot.PokeBattle.Common
             {
                 Stage = updatedStage;
             }
+
+            StageMultiplier = StageMultiplierUtils.GetBasicStatsMap[Stage];
         }
     }
 }

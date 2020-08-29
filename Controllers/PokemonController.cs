@@ -27,9 +27,18 @@ namespace PokeBot.Controllers
             PokeBattleData battleDataForRepo = _mapper.Map<PokeBattleData>(pokeBattleForCreationDto);
             _repo.Add(battleDataForRepo);
             var res = await _repo.SaveAll();
-            if(!res) throw new Exception($"Failed to register new PokeBattle to database. Please check battle data construction.");
+            if (!res) throw new Exception($"Failed to register new PokeBattle to database. Please check battle data construction.");
 
             System.Console.WriteLine($"PokeBattle Id {battleDataForRepo.BattleTokenId} successfully added.");
+        }
+
+        public async Task RemovePokeBattle(Guid battleTokenId)
+        {
+            var battleFromRepo = await _repo.GetPokeBattleDataByGUID(battleTokenId);
+            _repo.Delete(battleFromRepo);
+            var res = await _repo.SaveAll();
+
+            if (!res) throw new Exception($"Failed to delete pokebattle GUID: {battleTokenId}");
         }
 
         public async Task<PokemonDataForReturnDto> GetPokemonData(int pokeId)
@@ -67,6 +76,16 @@ namespace PokeBot.Controllers
             var moveDataFromRepo = await _repo.GetMoveDataByMoveId(moveId);
             var moveDataForReturn = _mapper.Map<MoveDataForReturnDto>(moveDataFromRepo);
             return moveDataForReturn;
+        }
+
+        public async Task UpdatePokemon(int id, PokemonForUpdateDto pokemonForUpdate)
+        {
+            var pokemonFromRepo = await _repo.GetPokemon(id);
+            _mapper.Map(pokemonForUpdate, pokemonFromRepo);
+
+            var res = await _repo.SaveAll();
+            if (!res) throw new Exception($"Failed to update pokemon id: {id}");
+            System.Console.WriteLine($"Pokemon with ID {id} has been updated.");
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using Discord;
@@ -37,7 +38,7 @@ namespace Pokebot
                 {
                     var context = serviceProvider.GetRequiredService<DataContext>();
                     context.Database.Migrate();
-                    await Seed.SeedPokeTypes(context);
+                    await context.SaveChangesAsync();
                 }
                 catch (Exception ex)
                 {

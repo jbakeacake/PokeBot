@@ -1,5 +1,6 @@
 using PokeBot.PokeBattle.Common;
 using PokeBot.PokeBattle.Moves;
+using PokeBot.PokeBattle.Moves.Ailments;
 
 namespace PokeBot.PokeBattle.Entities
 {
@@ -7,7 +8,9 @@ namespace PokeBot.PokeBattle.Entities
     {
         void CombatAction(ICombative other, Move move);
         void TakeDamage(int damage);
+        void Heal(int points);
         void ReceiveEffect(Move move);
+        void ReceiveAilment(Ailment ailment);
         void SetDisabled(bool isDisabled);
         bool isDisabled();
         bool isDead();

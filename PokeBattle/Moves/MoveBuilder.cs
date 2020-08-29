@@ -1,4 +1,6 @@
+using System;
 using PokeBot.PokeBattle.Moves.Ailments;
+using PokeBot.Utils;
 
 namespace PokeBot.PokeBattle.Moves
 {
@@ -36,7 +38,7 @@ namespace PokeBot.PokeBattle.Moves
         public MoveBuilder Ailment(string ailmentName)
         {
             //For now let's use placeholder ailments
-            _move.Ailment = null;
+            _move.Ailment = BuildAilment(ailmentName);
             return this;
         }
         public MoveBuilder Power(float power)
@@ -68,6 +70,30 @@ namespace PokeBot.PokeBattle.Moves
         {
             _move.TargetsOther = targetName.ToLower().Equals("user");
             return this;
+        }
+
+        private Ailment BuildAilment(string ailmentName)
+        {
+            if(!AilmentAliasMapUtil.GetAilmentAliasMap.ContainsKey(ailmentName)) return null;
+            Type typeOfAilment = AilmentAliasMapUtil.GetAilmentAliasMap[ailmentName];
+            var recoveryChance = DetermineChanceToRecover(typeOfAilment, ailmentName);
+            Ailment ailmentToReturn = (Ailment)Activator.CreateInstance(typeOfAilment, new object[]{ailmentName, _move.EffectChance, recoveryChance});
+            return ailmentToReturn;
+        }
+
+        private int DetermineChanceToRecover(Type ailmentType, string ailmentName)
+        {
+            int chance = 0;
+            if(ailmentType.Equals(typeof(Confusion)))
+            {
+                chance = 33;
+            }
+            else if (ailmentType.Equals(typeof(Disable)))
+            {
+                chance = AilmentAliasMapUtil.GetDisableChanceToRecoverMap[ailmentName];
+            }
+
+            return chance;
         }
     }
 }

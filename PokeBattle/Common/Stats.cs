@@ -18,14 +18,33 @@ namespace PokeBot.PokeBattle.Common
         {
             Skills = new Dictionary<string, Skill>();
         }
-        public void GainExperience(PokeEntity victim)
+        public override string ToString()
+        {
+            var message = "";
+            message += $"Max HP: {((int)MaxHP)}\n";
+            message += $"Level: {Level}\n";
+            message += $"EXP: {Experience} / {CalculateExperienceNeededForNextLevel()}\n";
+            message += SkillsToString();
+
+            return message;
+        }
+        private string SkillsToString()
+        {
+            var message = "";
+            foreach (var record in Skills)
+            {
+                message += $"{record.Key}: {((int) record.Value.Value)}\n";
+            }
+            return message;
+        }
+        public void GainExperience(PokeEntity loser)
         {
             // Based on the formula for XP gain for a pokemon -- for more info see: https://bulbapedia.bulbagarden.net/wiki/Experience#Experience_gain_in_battle
             float a = 1.5f;
-            float b = victim.Stats.Base_Experience;
+            float b = loser.Stats.Base_Experience;
             float e = 1f;
             float f = 1f;
-            float L = victim.Stats.Level;
+            float L = loser.Stats.Level;
             float p = 1f;
             float s = 1f;
             float t = 1f;
@@ -39,21 +58,41 @@ namespace PokeBot.PokeBattle.Common
             this.Experience += gain;
         }
 
-        private void LevelUp()
+        public void GainHalfExperience(PokeEntity loser)
+        {
+            // Based on the formula for XP gain for a pokemon -- for more info see: https://bulbapedia.bulbagarden.net/wiki/Experience#Experience_gain_in_battle
+            float a = 1.5f;
+            float b = loser.Stats.Base_Experience;
+            float e = 1f;
+            float f = 1f;
+            float L = loser.Stats.Level;
+            float p = 1f;
+            float s = 1f;
+            float t = 1f;
+            float v = 1f;
+
+            float numerator = a * t * b * e * L * p * f * v;
+            float denominator = 7 * s;
+
+            int gain = (int)(numerator / denominator);
+            System.Console.WriteLine($"EXP GAIN: {gain}");
+            this.Experience += (gain/2);
+        }
+
+        public void LevelUp()
         {
             float skillModifier = 0.05f;
-            foreach(var key in Skills.Keys)
+            foreach (var key in Skills.Keys)
             {
-                var pointsToAdd = Skills[key].Value * skillModifier;
+                var pointsToAdd = ((float) Skills[key].Value * skillModifier);
                 Skills[key].Value += pointsToAdd;
             }
             //Increase Health:
             float hpModifier = 0.10f;
             var hpToAdd = MaxHP * hpModifier;
-            
-            MaxHP += hpToAdd;
+
+            MaxHP += ((float)Math.Ceiling(hpToAdd));
             Level += 1;
-            
         }
         public bool CanLevelUp()
         {

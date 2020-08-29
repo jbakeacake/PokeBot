@@ -6,9 +6,8 @@ namespace PokeBot.PokeBattle.Moves.Ailments
     {
         public Leech(
             string name,
-            string description,
             float ailmentChance,
-            int chanceToRecover) : base(name, description, ailmentChance, chanceToRecover)
+            int chanceToRecover) : base(name, ailmentChance, chanceToRecover)
         {
         }
 
@@ -18,10 +17,15 @@ namespace PokeBot.PokeBattle.Moves.Ailments
             receiver.TakeDamage(damage);
         }
 
-        private float healthLeeched(ICombative receiver)
+        public float healthLeeched(ICombative receiver)
         {
             float damageDealt = receiver.GetStats().MaxHP * (0.125f);
             return damageDealt;
+        }
+
+        public override void RemoveFrom(PokeEntity illPokemon)
+        {
+            illPokemon.CurrentAilments.Remove(this.Name);
         }
     }
 }
