@@ -44,7 +44,7 @@ namespace PokeBot.Modules
             if (!(await _userController.UserExists(user.Id)))
                 await RegisterUser(user);
 
-            PokemonForCreationDto pokemonForCreation = await CreatePokemon(cwp._pokemon);
+            PokemonForCreationDto pokemonForCreation = CreatePokemon(cwp._pokemon);
             cwp.SetIsCaptured(true);
 
             await _userController.AddToUserPokeCollectionByDiscordId(user.Id, pokemonForCreation);
@@ -113,7 +113,7 @@ namespace PokeBot.Modules
             System.Console.WriteLine($"Registered user {user.Username}");
         }
 
-        private async Task<PokemonForCreationDto> CreatePokemon(PokemonDataForReturnDto pokemonDataForReturn)
+        private PokemonForCreationDto CreatePokemon(PokemonDataForReturnDto pokemonDataForReturn)
         {
             //Get a random set of moves for our pokemon
             int[] moveIds = GetRandomMoveIds(pokemonDataForReturn.MoveLinks);
