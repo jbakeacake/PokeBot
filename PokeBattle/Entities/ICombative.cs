@@ -6,7 +6,7 @@ namespace PokeBot.PokeBattle.Entities
 {
     public interface ICombative
     {
-        void CombatAction(ICombative other, Move move);
+        bool CombatAction(ICombative other, Move move, out string combatActionMessage);
         void TakeDamage(int damage);
         void Heal(int points);
         void ReceiveEffect(Move move);

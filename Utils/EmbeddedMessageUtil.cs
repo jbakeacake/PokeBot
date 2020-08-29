@@ -83,9 +83,9 @@ namespace PokeBot.Utils
                 .WithValue(
                     $"► Lv. {pokemon.Stats.Level}\n" +
                     $"► `{pokemon.PokeType.Name}`\n" +
-                    $"► {pokemon.Stats.MaxHP} / {pokemon.Stats.MaxHP} HP\n" +
+                    $"► {(int)pokemon.Stats.MaxHP} / {(int)pokemon.Stats.MaxHP} HP\n" +
                     $"► {pokemon.Stats.Experience} / {Math.Pow(pokemon.Stats.Level + 1, 3)}\n" +
-                    $"1. {pokemon.Moves[0].Name} 2. {pokemon.Moves[1].Name}\n3. {pokemon.Moves[2].Name} 4. {pokemon.Moves[3].Name}"
+                    $"1. {pokemon.Moves[0].Name}\n2. {pokemon.Moves[1].Name}\n3. {pokemon.Moves[2].Name}\n4. {pokemon.Moves[3].Name}"
                     )
                 .WithIsInline(true);
             return fieldBuilder;
@@ -118,17 +118,17 @@ namespace PokeBot.Utils
             string opponentHealthBar = GetPokemonHealthBar(opponentPokemon);
 
             var opponentField = new EmbedFieldBuilder()
-                .WithName($"`{opponentHealthBar}`\n{opponentPokemon.Stats.HP}/{opponentPokemon.Stats.MaxHP}")
+                .WithName($"`{opponentHealthBar}`\n{(int)opponentPokemon.Stats.HP}/{(int)opponentPokemon.Stats.MaxHP}")
                 .WithValue($"`{opponentPokemon.Name} Lv. {opponentPokemon.Stats.Level}`");
             var controllerField = new EmbedFieldBuilder()
-                .WithName($"`{controllerHealthbar}`\n {controllerPokemon.Stats.HP}/{controllerPokemon.Stats.MaxHP}")
+                .WithName($"`{controllerHealthbar}`\n {(int)controllerPokemon.Stats.HP}/{(int)controllerPokemon.Stats.MaxHP}")
                 .WithValue($"`{controllerPokemon.Name} Lv. {controllerPokemon.Stats.Level}`")
                 .WithIsInline(true);
             var moves = "▄▄▄▄▄▄▄▄▄▄▄\n\n►► Moves ◄◄\n";
             int counter = 1;
             foreach(var move in controllerPokemon.Moves)
             {
-                moves += $"║ {counter}. {move.Name}\n";
+                moves += $"║ {counter}. {move.Name} :: {move.PP} PP\n";
                 counter++;
             }
             var fieldEmpty1 = new EmbedFieldBuilder()

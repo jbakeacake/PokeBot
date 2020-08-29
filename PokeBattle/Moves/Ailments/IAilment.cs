@@ -4,7 +4,6 @@ namespace PokeBot.PokeBattle.Moves.Ailments
 {
     public interface IAilment
     {
-        void ApplyAilment(ICombative receiver);
-        bool IsRecoverySuccessful();
+        void ApplyAilment(PokeEntity receiver);
     }
 }

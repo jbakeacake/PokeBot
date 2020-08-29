@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
@@ -88,14 +89,13 @@ namespace PokeBot.Managers
         {
             if (_pendingPlayers.Contains(sender.Id))
             {
-                System.Console.WriteLine($"{sender.Id} is busy");
+                _pendingPlayers.ToList().ForEach(x => System.Console.WriteLine(x));
                 var busyMsg = @"You are currently busy right now. You can cancel your current invitation or game by typing `!cancel`. **Beware**, if you leave the middle of a game, your pokemon will lose experience.";
                 await SendPlayerMessage(busyMsg, sender.Id);
                 return;
             }
             else if (_pendingPlayers.Contains(receiver.Id))
             {
-                System.Console.WriteLine($"{receiver.Id} is busy");
                 var busyMsg = $"**{receiver.Username}** is currently busy at the moment. Try again later!";
                 await SendPlayerMessage(busyMsg, sender.Id);
                 return;
@@ -156,6 +156,15 @@ namespace PokeBot.Managers
             await SendPlayerMessage(playerOneScene, game.PlayerOne.DiscordId);
             await SendPlayerMessage(playerTwoScene, game.PlayerTwo.DiscordId);
         }
+        public async Task SendPlayersLogMessage(PokeBattleGame game)
+        {
+            var message = "```\n";
+            message += game.LogMessage;
+            message += "```";
+            
+            await SendPlayerMessage(message, game.PlayerOne.DiscordId);
+            await SendPlayerMessage(message, game.PlayerTwo.DiscordId);
+        }
         public bool AreBothPlayersReady(Guid battleTokenId)
         {
             if (!_games.ContainsKey(battleTokenId)) return false;
@@ -181,7 +190,23 @@ namespace PokeBot.Managers
 
         public void RemovePendingInvite(ulong invitationId)
         {
+            var invitation = _pendingInvitations[invitationId];
+            RemovePlayerFromPendingSet(invitation.PlayerOneId);
+            RemovePlayerFromPendingSet(invitation.PlayerTwoId);
             _pendingInvitations.Remove(invitationId);
+        }
+
+        private void RemovePlayerFromPendingSet(ulong discordId)
+        {
+            if(!_pendingPlayers.Contains(discordId)) return;
+            
+            _pendingPlayers.Remove(discordId);
+        }
+
+        public (ulong, ulong) GetInvitiationGroupByPlayerId(ulong discordId)
+        {
+            var record = _pendingInvitations.FirstOrDefault(x => x.Value.PlayerOneId == discordId || x.Value.PlayerTwoId == discordId);
+            return (record.Value.PlayerOneId, record.Value.PlayerTwoId);
         }
 
         struct InvitationGroup

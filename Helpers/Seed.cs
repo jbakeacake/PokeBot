@@ -83,19 +83,7 @@ namespace PokeBot.Helpers
 
         public static void SetRandomMoveIds(Pokemon pokemon, PokemonData data)
         {
-            int[] arrOfMoveIds = new int[4];
-            Random rand = new Random();
-            for(int i = 0; i < arrOfMoveIds.Length; i++)
-            {
-                var count = data.MoveLinks.Count;
-                var randomId = rand.Next(1, count);
-                arrOfMoveIds[i] = randomId;
-            }
-
-            pokemon.MoveId_One = arrOfMoveIds[0];
-            pokemon.MoveId_Two = arrOfMoveIds[1];
-            pokemon.MoveId_Three = arrOfMoveIds[2];
-            pokemon.MoveId_Four = arrOfMoveIds[3];
+            // TODO:
         }
 
         public static float GetRandomStat(float base_stat)

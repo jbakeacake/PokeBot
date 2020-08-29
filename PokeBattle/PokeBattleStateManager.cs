@@ -1,5 +1,6 @@
 using System;
 using PokeBot.PokeBattle.Entities;
+using PokeBot.PokeBattle.Moves;
 
 namespace PokeBot.PokeBattle
 {
@@ -48,7 +49,7 @@ namespace PokeBot.PokeBattle
                 _currentState == PokeBattleStates.PLAYER_TWO_WIN);
         }
 
-        public void ExecuteTurn(int moveIndex)
+        public string ExecuteTurn(int moveIndex)
         {
             switch (_currentState)
             {
@@ -60,35 +61,30 @@ namespace PokeBot.PokeBattle
                     }
                 case PokeBattleStates.PLAYER_ONE:
                     {
-                        DoPlayerMove(moveIndex, _playerOne, _playerTwo);
-                        var nextState = isPlayerDisabled(_playerTwo) ? PokeBattleStates.PLAYER_ONE : PokeBattleStates.PLAYER_TWO;
-                        _playerTwo.CurrentPokemon.TryToRecoverAilments();
-                        UpdateState(nextState);
+                        var logMessage = DoPlayerMove(moveIndex, _playerOne, _playerTwo, nextState: PokeBattleStates.PLAYER_TWO);
                         DetermineConclusion(_playerOne, _playerTwo);
-                        break;
+                        return logMessage;
                     }
                 case PokeBattleStates.PLAYER_TWO:
                     {
-                        DoPlayerMove(moveIndex, _playerTwo, _playerOne);
-                        var nextState = isPlayerDisabled(_playerOne) ? PokeBattleStates.PLAYER_TWO : PokeBattleStates.PLAYER_ONE;
-                        UpdateState(nextState);
-                        _playerOne.CurrentPokemon.TryToRecoverAilments();
+                        var logMessage = DoPlayerMove(moveIndex, _playerTwo, _playerOne, nextState: PokeBattleStates.PLAYER_ONE);
                         DetermineConclusion(_playerOne, _playerTwo);
-                        break;
+                        return logMessage;
                     }
                 case PokeBattleStates.PLAYER_ONE_WIN:
                     {
                         System.Console.WriteLine("PLAYER ONE WIN");
                         doPlayerWin(_playerOne, _playerTwo);
-                        break;
+                        return "";
                     }
                 case PokeBattleStates.PLAYER_TWO_WIN:
                     {
                         System.Console.WriteLine("PLAYER TWO WIN");
                         doPlayerWin(_playerTwo, _playerOne);
-                        break;
+                        return "";
                     }
             }
+            return "";
         }
 
         private bool isPlayerDisabled(BattlePlayer player)
@@ -102,16 +98,67 @@ namespace PokeBot.PokeBattle
             UpdateState(next);
         }
 
-        private void DoPlayerMove(int moveIndex, BattlePlayer attacker, BattlePlayer defender)
+        private string DoPlayerMove(int moveIndex, BattlePlayer attacker, BattlePlayer defender, PokeBattleStates nextState)
         {
+            var logMessage = "";
             var attackingPokemon = attacker.CurrentPokemon;
             var defendingPokemon = defender.CurrentPokemon;
 
             var attackerMove = attackingPokemon.Moves[moveIndex - 1];
 
-            attackingPokemon.CombatAction(defendingPokemon, attackerMove);
-            attackingPokemon.TriggerAilments(defendingPokemon);
-            defendingPokemon.TriggerAilments(attackingPokemon);
+            var combatActionMessage = "";
+            var successfulAttack = attackingPokemon.CombatAction(defendingPokemon, attackerMove, out combatActionMessage);
+            var defendingAfflictionMsg = attackingPokemon.TriggerAilments(defendingPokemon);
+            var attackingAfflictionMsg = defendingPokemon.TriggerAilments(attackingPokemon);
+            if (successfulAttack && !isPlayerDisabled(defender))
+            {
+                logMessage += $"|{attackingPokemon.Name} used [{attackerMove.Name}]!\n";
+                logMessage += combatActionMessage;
+                logMessage += CreateEffectLogMessage(attackerMove, attackingPokemon, defendingPokemon);
+                logMessage += defendingAfflictionMsg;
+                logMessage += attackingAfflictionMsg;
+                UpdateState(nextState);
+            }
+
+
+            if (!successfulAttack)
+            {
+                logMessage += $"|{attackingPokemon.Name} can't use {attackerMove.Name}! It's out of PP.";
+            }
+            else if (isPlayerDisabled(defender))
+            {
+                logMessage += $"|{attackingPokemon.Name} used [{attackerMove.Name}]!\n";
+                logMessage += combatActionMessage;
+                logMessage += CreateEffectLogMessage(attackerMove, attackingPokemon, defendingPokemon);
+                logMessage += defendingAfflictionMsg;
+                logMessage += attackingAfflictionMsg;
+            }
+
+            return logMessage;
+        }
+        private string CreateEffectLogMessage(Move move, PokeEntity attacker, PokeEntity defender)
+        {
+            System.Console.WriteLine($"{move.Name} | {move.TargetsOther}");
+            if (move.StatChangeName == "none") return "";
+            var logMessage = "";
+            if (move.TargetsOther)
+            {
+                logMessage += $"|{defender.Name}'s {move.StatChangeName} ";
+            }
+            else
+            {
+                logMessage += $"|{attacker.Name}'s {move.StatChangeName} ";
+            }
+            if (move.StatChangeValue > 0)
+            {
+                logMessage += "rose!";
+            }
+            else
+            {
+                logMessage += "fell!";
+            }
+
+            return logMessage;
         }
         private void doPlayerWin(BattlePlayer winner, BattlePlayer loser)
         {

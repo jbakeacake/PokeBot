@@ -95,22 +95,18 @@ namespace PokeBot.PokeBattle.Entities
             return setToReturn;
         }
 
-        public void CombatAction(ICombative other, Move move)
+        public bool CombatAction(ICombative other, Move move, out string combatActionMessage)
         {
-            Attack(other, move);
+            combatActionMessage = "";
+            if (move.PP == 0) return false;
+            combatActionMessage += Attack(other, move);
+            move.PP--;
+            return true;
         }
 
         public void ReceiveEffect(Move move)
         {
             Stats.Skills[move.StatChangeName].CalculateStageMultiplier(move.StatChangeValue);
-            if (move.StatChangeValue < 0)
-            {
-                System.Console.WriteLine($"{Name}'s {move.StatChangeName} fell by {move.StatChangeValue}. Now {Stats.Skills[move.StatChangeName].Stage}");
-            }
-            else
-            {
-                System.Console.WriteLine($"{Name}'s {move.StatChangeName} rose by {move.StatChangeValue}. Now {Stats.Skills[move.StatChangeName].Stage}");
-            }
         }
         private void ApplyEffect(ICombative other, Move move)
         {
@@ -119,42 +115,56 @@ namespace PokeBot.PokeBattle.Entities
             {
                 other.ReceiveEffect(move);
             }
-            else
+            else if (!move.TargetsOther)
             {
                 ReceiveEffect(move);
             }
         }
-        private void Attack(ICombative other, Move move)
+        private string Attack(ICombative other, Move move)
         {
-            System.Console.WriteLine($"{Name} used {move.Name}!");
-            if (!isAttackDodged((PokeEntity)other, move))
+            if (!other.isAttackDodged(this, move))
             {
                 var damage = CalculateDamage(other, move);
                 other.TakeDamage(damage);
 
                 if (!move.StatChangeName.Equals("none"))
                 {
-                    System.Console.WriteLine($"{Name} applying {move.Name} to other.");
                     ApplyEffect(other, move);
                 }
                 if (move.Ailment != null)
                 {
-                    System.Console.WriteLine($"{Name} trying to apply {move.Ailment.Name}");
                     other.ReceiveAilment(move.Ailment);
                 }
+                return CreateEffectiveMoveMessage(other, move);
             }
             else
             {
-                System.Console.WriteLine("It missed!");
+                return "|It missed!\n";
             }
         }
 
+        private string CreateEffectiveMoveMessage(ICombative other, Move move)
+        {
+            if (other.isDoubleDamageFrom(move.Type))
+            {
+                return "|It's super effective!\n";
+            }
+            else if (other.isHalfDamageFrom(move.Type))
+            {
+                return "|It's not very effective...\n";
+            }
+            else
+            {
+                return "";
+            }
+        }
         private int CalculateDamage(ICombative defender, Move move)
         {
             var modifier = GetDamageModifier(defender, move);
+            float stageMultiplier = isSpecialAttack(move.Type) ? this.Stats.Skills["special-attack"].StageMultiplier : this.Stats.Skills["attack"].StageMultiplier;
             string attackSkill = isSpecialAttack(move.Type) ? "special-attack" : "attack";
             string defenseSkill = isSpecialAttack(move.Type) ? "special-defense" : "defense";
-            var numerator = (((2 * Stats.Level) / 5) + 2) * move.Power * (this.Stats.Skills[attackSkill].Value / defender.GetStats().Skills[defenseSkill].Value) * modifier;
+            var numerator = (((2 * Stats.Level) / 5) + 2) * move.Power * (this.Stats.Skills[attackSkill].Value / defender.GetStats().Skills[defenseSkill].Value) * modifier * stageMultiplier;
             var denominator = 50;
 
             var damage = ((numerator / denominator) + 2) * modifier;
@@ -195,7 +205,6 @@ namespace PokeBot.PokeBattle.Entities
         public void TakeDamage(int damage)
         {
             Stats.HP -= damage;
-            System.Console.WriteLine($"{Name} took {damage} points of damage!");
         }
         public void Heal(int points)
         {
@@ -212,19 +221,26 @@ namespace PokeBot.PokeBattle.Entities
         public bool isAttackDodged(PokeEntity attacker, Move move) // WE are the defender/dodger
         {
             // Since our data is Gen III+ use formular for Gen III Onward -- for more info: https://bulbapedia.bulbagarden.net/wiki/Statistic#Accuracy_and_evasion
-            float adjustedStages = this.Stats.Skills["evasion"].Stage - attacker.Stats.Skills["accuracy"].Stage;
+            var defenderEvasionMultiplier = this.Stats.Skills["evasion"].StageMultiplier;
+            var attackerAccuracyMultiplier = attacker.Stats.Skills["accuracy"].StageMultiplier;
+            float adjustedStages = defenderEvasionMultiplier - attackerAccuracyMultiplier;
+            System.Console.WriteLine($"Adjusted Stages : {defenderEvasionMultiplier} - {attackerAccuracyMultiplier}");
             float threshold = (move.Accuracy * adjustedStages);
             //Select a random number 'r' from 1 to 255 (inclusive) and compare it to 'threshold' to determine if move hits
             Random rand = new Random();
             float r = rand.Next(1, 101);
+            System.Console.WriteLine($"ATTACK ROLL: r: {r} <= T: {threshold}");
             return r <= threshold;
         }
 
         public bool isEffectSuccessful(PokeEntity attacker, Move move)
         {
             float threshold = move.EffectChance; // Anything less
+            if(threshold == 0) return true;
+
             Random rand = new Random();
             float r = rand.Next(101);
+            System.Console.WriteLine($"EFFECT ROLL: r: {r} <= T: {threshold}");
             return r <= threshold;
         }
         public void ReceiveAilment(Ailment ailment)
@@ -235,9 +251,10 @@ namespace PokeBot.PokeBattle.Entities
             System.Console.WriteLine($"{Name} was afflicted with {ailment.Name}");
             CurrentAilments.Add(ailment.Name, ailment);
         }
-        public void TriggerAilments(ICombative attacker)
+        public string TriggerAilments(ICombative attacker)
         {
-            if (CurrentAilments.Count == 0) return;
+            var logMessage = "";
+            if (CurrentAilments.Count == 0) return "";
             foreach (var ailment in CurrentAilments.Values)
             {
                 ailment.ApplyAilment(this);
@@ -246,26 +263,21 @@ namespace PokeBot.PokeBattle.Entities
                     var healthLeeched = ((Leech)ailment).healthLeeched(this);
                     attacker.Heal((int)healthLeeched);
                 }
+                if(CurrentAilments.ContainsKey(ailment.Name))
+                    logMessage += $"|{Name} was afflicted by {ailment.Name}! \n";
             }
+            return logMessage;
         }
-        public void TryToRecoverAilments()
+        public void RemoveAilment(string name)
         {
-            foreach (var ailment in CurrentAilments.Values)
-            {
-                System.Console.WriteLine($"{Name} trying to recover from {ailment.Name}.");
-                if (ailment.IsRecoverySuccessful())
-                {
-                    ailment.RemoveFrom(this);
-                    CurrentAilments.Remove(ailment.Name);
-                    System.Console.WriteLine($"{Name} recovered from {ailment.Name}");
-                }
-            }
+            System.Console.WriteLine($"{name} removed!");
+            CurrentAilments.Remove(name);
         }
         private bool isAilmentApplied(Ailment ailment)
         {
             Random rand = new Random();
             int r = rand.Next(1, 101);
-
+            System.Console.WriteLine($"r: {r} < T: {ailment.AilmentChance}");
             return r < (ailment.AilmentChance);
         }
 

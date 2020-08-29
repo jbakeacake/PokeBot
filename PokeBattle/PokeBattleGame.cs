@@ -19,6 +19,7 @@ namespace PokeBot.PokeBattle
         public ulong PlayerTwoLogId { get; set; }
         public ulong PlayerOneSceneId { get; set; }
         public ulong PlayerTwoSceneId { get; set; }
+        public string LogMessage { get; set; }
         public PokeBattleGame(Guid battleTokenId, PokemonController pokemonController, UserController userController)
         {
             BattleTokenId = battleTokenId;
@@ -85,7 +86,7 @@ namespace PokeBot.PokeBattle
 
         public void RunGame(int moveIndex)
         {
-            StateManager.ExecuteTurn(moveIndex);
+            LogMessage = StateManager.ExecuteTurn(moveIndex);
         }
         public BattlePlayer GetPlayerForMove()
         {

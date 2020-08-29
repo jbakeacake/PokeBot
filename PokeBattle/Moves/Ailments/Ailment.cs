@@ -15,14 +15,7 @@ namespace PokeBot.PokeBattle.Moves.Ailments
             ChanceToRecover = chanceToRecover;
         }
 
-        public bool IsRecoverySuccessful()
-        {
-            Random rand = new Random();
-            var rollToRecover = rand.Next(101);
-
-            return rollToRecover <= ChanceToRecover;
-        }
-        public abstract void ApplyAilment(ICombative receiver);
+        public abstract void ApplyAilment(PokeEntity receiver);
         public abstract void RemoveFrom(PokeEntity illPokemon);
     }
 }

@@ -64,6 +64,13 @@ namespace PokeBot.Services
             //Execute the current players turn
             int chosenMove = moveSetMap[reaction.Emote];
             var user = await _userController.GetUserByDiscordId(reaction.UserId);
+            
+            if(!_handler._games.ContainsKey(user.BattleTokenId))
+            {
+                await message.DeleteAsync();
+                return;
+            }
+            
             var game = _handler._games[user.BattleTokenId];
             var moveIndex = MoveSetEmojiMapUtil.GetMoveSetEmojiMap[reaction.Emote];
             // Check if its the user's turn:
@@ -92,20 +99,7 @@ namespace PokeBot.Services
             // After the execution of the move, 
             // alert both players of the updated scene
             await _handler.SendPlayersBattleScene(game);
-            string logMessage = $"```\n|{currentUser.CurrentPokemon.Name.ToUpper()} used [{currentUser.CurrentPokemon.Moves[moveIndex - 1].Name}]!\n|";
-            if (nextPlayer.DiscordId == currentUser.DiscordId) // In case the other player is currently disabled.
-            {
-                var disabledPlayer = game.PlayerOne.DiscordId == currentUser.DiscordId ? game.PlayerTwo : game.PlayerOne;
-                logMessage += $"{disabledPlayer.CurrentPokemon.Name} is disabled!```";
-                await _handler.SendPlayerMessage(logMessage, currentUser.DiscordId);
-                await _handler.SendPlayerMessage(logMessage, disabledPlayer.DiscordId);
-            }
-            else
-            {
-                logMessage += "```";
-                await _handler.SendPlayerMessage(logMessage, currentUser.DiscordId);
-                await _handler.SendPlayerMessage(logMessage, nextPlayer.DiscordId);
-            }
+            await _handler.SendPlayersLogMessage(game);
             //Notify the next player's turn;
             await _handler.NotifyPlayerOfTurn(nextPlayer.DiscordId);
             if (message != null)
@@ -114,6 +108,11 @@ namespace PokeBot.Services
 
         private async Task DoInviteAction(SocketReaction reaction, IUserMessage message)
         {
+            if(!_handler._pendingPlayers.Contains(reaction.UserId))
+            {
+                await message.DeleteAsync();
+                return;
+            }
             if (reaction.Emote.Name.Equals("✅"))
             {
                 await _handler.CreateGame(message.Id);

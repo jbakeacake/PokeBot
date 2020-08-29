@@ -5,21 +5,34 @@ namespace PokeBot.PokeBattle.Moves.Ailments
     public class DamageOverTime : Ailment
     {
         private readonly float DAMAGE = 0.125f;
-        public DamageOverTime(string name, 
+        private readonly int MAX_TURNS = 4;
+        private int TurnCounter { get; set; }
+        public DamageOverTime(string name,
             float ailmentChance,
             int chanceToRecover) : base(name, ailmentChance, chanceToRecover)
         {
+            TurnCounter = 2;
         }
 
-        public override void ApplyAilment(ICombative receiver)
+        public override void ApplyAilment(PokeEntity receiver)
         {
-            int damage = (int)(receiver.GetStats().MaxHP * (DAMAGE));
-            receiver.TakeDamage(damage);
+            if (TurnCounter > 0)
+            {
+                int damage = (int)(receiver.GetStats().MaxHP * (DAMAGE));
+                receiver.TakeDamage(damage);
+                TurnCounter--;
+            }
+            else
+            {
+                RemoveFrom(receiver);
+            }
         }
 
         public override void RemoveFrom(PokeEntity illPokemon)
         {
-            illPokemon.CurrentAilments.Remove(this.Name);
+            if(TurnCounter != 0) return;
+            TurnCounter = MAX_TURNS;
+            illPokemon.RemoveAilment(Name);
         }
     }
 }

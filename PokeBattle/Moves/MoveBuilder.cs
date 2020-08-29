@@ -68,7 +68,7 @@ namespace PokeBot.PokeBattle.Moves
         }
         public MoveBuilder TargetsOther(string targetName)
         {
-            _move.TargetsOther = targetName.ToLower().Equals("user");
+            _move.TargetsOther = !targetName.ToLower().Equals("user");
             return this;
         }
 

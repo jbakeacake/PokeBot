@@ -31,6 +31,40 @@ namespace PokeBot.Modules
             _gameHandler = pokeBattleHandlingService._handler;
         }
 
+        [Command("cancel")]
+        public async Task CancelDuel()
+        {
+            var user = Context.Message.Author;
+            var userFromTable = await _userController.GetUserByDiscordId(user.Id);
+            var playersInvolved = _gameHandler.GetInvitiationGroupByPlayerId(user.Id);
+
+            //Remove if the players are pending
+            RemovePlayerFromBusyLists(_gameHandler._pendingPlayers, playersInvolved.Item1);
+            RemovePlayerFromBusyLists(_gameHandler._pendingPlayers, playersInvolved.Item2);
+            //Remove if the players are battling
+            RemovePlayerFromBusyLists(_gameHandler._battlingPlayers, playersInvolved.Item1);
+            RemovePlayerFromBusyLists(_gameHandler._battlingPlayers, playersInvolved.Item2);
+            //Finally, remove the game from our dictionary (if theyre in the middle of a game):
+            if(_gameHandler._games.ContainsKey(userFromTable.BattleTokenId))
+            {
+                var game = _gameHandler._games[userFromTable.BattleTokenId];
+                UserForUpdateDto userWithCleanedToken = new UserForUpdateDto(Guid.Empty);
+                await _userController.UpdateUser(game.PlayerOne.DiscordId, userWithCleanedToken);
+                await _userController.UpdateUser(game.PlayerTwo.DiscordId, userWithCleanedToken);
+                _gameHandler._games.Remove(userFromTable.BattleTokenId);
+            }
+        }
+
+        private void RemovePlayerFromBusyLists(HashSet<ulong> busyList, ulong discordId)
+        {
+            System.Console.WriteLine("Trying to remove player from busy set");
+            if(busyList.Contains(discordId))
+            {
+                System.Console.WriteLine($"{discordId} removed from busy set.");
+                busyList.Remove(discordId);
+            }
+        }
+
         [Command("duel")]
         public async Task Duel(SocketUser receiver)
         {
@@ -47,8 +81,9 @@ namespace PokeBot.Modules
 
             if (_gameHandler.isPlayerInBattle(user.Id)) return;
             if (battleTokenId == Guid.Empty) return;
+            if(!_gameHandler._games.ContainsKey(battleTokenId)) return;
 
-            System.Console.WriteLine("Pokemon Chosen...");
+
             var game = _gameHandler._games[battleTokenId];
             var player = game.GetPlayer(user.Id);
             var pokemon = await _pokemonController.GetPokemonFromUserInventory(pokemonId);

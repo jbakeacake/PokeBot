@@ -8,7 +8,7 @@ namespace PokeBot.PokeBattle.Moves.Ailments
         {
         }
 
-        public override void ApplyAilment(ICombative receiver)
+        public override void ApplyAilment(PokeEntity receiver)
         {
             throw new System.NotImplementedException();
         }

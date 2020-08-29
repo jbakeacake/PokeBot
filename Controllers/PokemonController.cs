@@ -32,6 +32,14 @@ namespace PokeBot.Controllers
             System.Console.WriteLine($"PokeBattle Id {battleDataForRepo.BattleTokenId} successfully added.");
         }
 
+        public async Task<PokeBattleForReturnDto> GetPokeBattle(Guid battleTokenId)
+        {
+            var battleFromRepo = await _repo.GetPokeBattleDataByGUID(battleTokenId);
+            var battleToReturn = _mapper.Map<PokeBattleForReturnDto>(battleFromRepo);
+
+            return battleToReturn;
+        }
+
         public async Task RemovePokeBattle(Guid battleTokenId)
         {
             var battleFromRepo = await _repo.GetPokeBattleDataByGUID(battleTokenId);
