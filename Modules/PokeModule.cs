@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PokeBot.Controllers;
 using PokeBot.Dtos;
 using PokeBot.Helpers;
+using PokeBot.Models;
 using PokeBot.PokeBattle.Entities;
 using PokeBot.PokeBattle.Moves;
 using PokeBot.Utils;
@@ -43,7 +44,7 @@ namespace PokeBot.Modules
             if (!(await _userController.UserExists(user.Id)))
                 await RegisterUser(user);
 
-            PokemonForCreationDto pokemonForCreation = new PokemonForCreationDto(cwp._pokemon.PokeId, cwp._pokemon.Name);
+            PokemonForCreationDto pokemonForCreation = await CreatePokemon(cwp._pokemon);
             cwp.SetIsCaptured(true);
 
             await _userController.AddToUserPokeCollectionByDiscordId(user.Id, pokemonForCreation);
@@ -110,6 +111,49 @@ namespace PokeBot.Modules
         {
             await _userController.RegisterUser(user.Id, user.Username);
             System.Console.WriteLine($"Registered user {user.Username}");
+        }
+
+        private async Task<PokemonForCreationDto> CreatePokemon(PokemonDataForReturnDto pokemonDataForReturn)
+        {
+            //Get a random set of moves for our pokemon
+            int[] moveIds = GetRandomMoveIds(pokemonDataForReturn.MoveLinks);
+            //Create our pokemon:
+            PokemonForCreationDto pokemonForCreation = new PokemonForCreationDto
+            {
+                PokeId = pokemonDataForReturn.PokeId,
+                Name = pokemonDataForReturn.Name,
+                MaxHP = pokemonDataForReturn.MaxHP,
+                Level = pokemonDataForReturn.Level,
+                Base_Experience = pokemonDataForReturn.Base_Experience,
+                Experience = pokemonDataForReturn.Experience,
+                Attack = pokemonDataForReturn.Attack,
+                Defense = pokemonDataForReturn.Defense,
+                SpecialAttack = pokemonDataForReturn.SpecialAttack,
+                SpecialDefense = pokemonDataForReturn.SpecialDefense,
+                Speed = pokemonDataForReturn.Speed,
+                Type = pokemonDataForReturn.Type,
+                MoveId_One = moveIds[0],
+                MoveId_Two = moveIds[1],
+                MoveId_Three = moveIds[2],
+                MoveId_Four = moveIds[3]
+            };
+
+            return pokemonForCreation;
+        }
+
+        private int[] GetRandomMoveIds(ICollection<MoveLink> moveLinks)
+        {
+            int[] moveIds = new int[4];
+            Random rand = new Random();
+            var moveCount = moveLinks.Count();
+            int skips = rand.Next(1, moveCount+1);
+            for(int i = 0; i < moveIds.Length; i++)
+            {
+                moveIds[i] = moveLinks.Skip(skips).Take(1).First().MoveId;
+                skips = rand.Next(1, moveCount+1);
+            }
+
+            return moveIds;
         }
 
         //TODO : MOVE TO HELPER OBJECT

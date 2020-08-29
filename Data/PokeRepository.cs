@@ -87,7 +87,7 @@ namespace PokeBot.Data
 
         public async Task<PokemonData> GetPokemonDataByPokeId(int pokeId)
         {
-            var pokemonData = await _context.PokeData_Tbl.AsQueryable().FirstOrDefaultAsync(x => x.PokeId == pokeId);
+            var pokemonData = await _context.PokeData_Tbl.AsQueryable().Include(x => x.MoveLinks).FirstOrDefaultAsync(x => x.PokeId == pokeId);
             return pokemonData;
         }
 

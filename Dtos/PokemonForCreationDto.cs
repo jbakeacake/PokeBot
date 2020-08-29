@@ -18,12 +18,18 @@ namespace PokeBot.Dtos
         public float SpecialDefense { get; set; }
         public float Speed { get; set; }
         public string Type { get; set; }
-        public ICollection<MoveLink> Moves { get; set; }
+        public int MoveId_One { get; set; }
+        public int MoveId_Two { get; set; }
+        public int MoveId_Three { get; set; }
+        public int MoveId_Four { get; set; }
 
         public PokemonForCreationDto(int pokeId, string name)
         {
             Name = name;
             PokeId = pokeId;
         }
+
+        public PokemonForCreationDto()
+        { }
     }
 }

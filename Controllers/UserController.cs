@@ -68,17 +68,18 @@ namespace PokeBot.Controllers
             var res = await _repo.SaveAll();
             if (!res) throw new Exception($"Updating user {id}. Failed to save to database!");
         }
-        public async Task AddToUserPokeCollectionByDiscordId(ulong discordId, PokemonForCreationDto pokemonForUpdateDto)
+        public async Task AddToUserPokeCollectionByDiscordId(ulong discordId, PokemonForCreationDto pokemonForCreationDto)
         {
             var userFromRepo = await _repo.GetUserByDiscordId(discordId);
 
             if (userFromRepo == null) return;
 
-            var pokemon = _mapper.Map<Pokemon>(pokemonForUpdateDto);
+            var pokemon = _mapper.Map<Pokemon>(pokemonForCreationDto);
             userFromRepo.PokeCollection.Add(pokemon);
 
             var res = await _repo.SaveAll();
             if (!res) throw new Exception($"Updating user {discordId}. Failed to save to database!");
+            System.Console.WriteLine($"{pokemon.Name} successfully added to {userFromRepo.Id}'s inventory");
         }
 
         public async Task UpdateUser(ulong discordId, UserForUpdateDto userForUpdateDto)
