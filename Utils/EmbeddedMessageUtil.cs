@@ -200,7 +200,7 @@ namespace PokeBot.Utils
                 .WithAuthor(self)
                 .WithColor(Color.Red)
                 .WithTitle($"🎴 POKÉDEX")
-                .WithDescription($"▼**{pokemon.Name.ToUpper()}**\n{pokemonStats}")
+                .WithDescription($"▼**{pokemon.Name.ToUpper()}**\n{pokemonStats}\n\n ►► Moves ◄◄ \n 1.) {pokemon.Moves[0]}\n2.) {pokemon.Moves[1]}\n3.) {pokemon.Moves[2]}\n4.) {pokemon.Moves[3]}")
                 .WithFooter(footer => footer.Text = "Detailed at ")
                 .WithCurrentTimestamp()
                 .Build();
