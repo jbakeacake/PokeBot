@@ -1,13 +1,23 @@
 # PokeBot
 A Discord Pokemon bot that sporadically displays Pokemon throughout the day. Any user can use a command to display their collection or catch a new pokemon!
 
+## Features
+### Collect them All! (Gen I Only)
+
+Every hour, you have the opportunity to catch some of your favorite Pokemon from the first original 151 pokemon.
+
+### Duel Each Other and Become the Very Best (Still Testing)
+
+_Note: This feature is not entirely complete, though the full combat cycle is ready._ <br/><br/>
+Challenge your fellow discord members with PokeBot's dueling system. Train and level up your Pokemon, increasing their power and stats along the way.
+
 # Quick Start
 > **Pre-Setup**
 
 Before running the bot, there's a couple of things that need to be set up in order to get your own bot up and running. If you don't have your own
-Discord Bot set up, take a look at this article on [how to make a Discord Bot](https://www.digitaltrends.com/gaming/how-to-make-a-discord-bot/) -- follow this guide's steps
-from **step 2** to **step 4**. Make sure you know where to find your bot's `Token` before moving on. Additionally,to protect your bot 
-from being abused on your server make sure you keep your `Token` secret, and hidden from the public.
+Discord Bot set up, take a look at this article on [how to make a Discord Bot](https://www.digitaltrends.com/gaming/how-to-make-a-discord-bot/) -- follow this guide up to
+step 4. Make sure you know where to find your bot's `Token` before moving on. Additionally,to protect your bot from being abused on your server make sure you keep your
+`Token` secret, and hidden from the public.
 
 
 > **Configuring our App Settings**

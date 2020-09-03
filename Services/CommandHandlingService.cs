@@ -1,11 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using Microsoft.Extensions.Configuration;
 
 namespace PokeBot.Services
 {
@@ -14,12 +12,13 @@ namespace PokeBot.Services
         private readonly DiscordSocketClient _discord;
         private readonly CommandService _commands;
         private IServiceProvider _provider;
+
         public CommandHandlingService(IServiceProvider provider, DiscordSocketClient discord, CommandService commands)
         {
             _discord = discord;
             _commands = commands;
             _provider = provider;
-
+            
             _discord.MessageReceived += MessageReceived;
         }
 
@@ -39,6 +38,7 @@ namespace PokeBot.Services
             if (!message.HasStringPrefix("!", ref argPos)) return;
 
             var context = new SocketCommandContext(_discord, message);
+
             var result = await _commands.ExecuteAsync(context, argPos, _provider);
             if (result.Error.HasValue &&
                 result.Error.Value != CommandError.UnknownCommand)

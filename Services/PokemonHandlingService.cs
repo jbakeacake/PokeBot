@@ -10,29 +10,27 @@ using Microsoft.Extensions.DependencyInjection;
 using PokeBot.Controllers;
 using PokeBot.Dtos;
 using PokeBot.Models;
-using PokeBot.Services.Helpers;
+using PokeBot.Helpers;
 
 namespace PokeBot.Services
 {
     public class PokemonHandlingService
     {
         private readonly DiscordSocketClient _discord;
-        private readonly PokeCache _cache;
         private IServiceProvider _provider;
         private PokemonController _pokeController;
         private UserController _userController;
         private System.Threading.Timer _timer;
         private readonly int MIN_MINUTE_INTERVAL = 1;
-        private readonly int MAX_MINUTE_INTERVAL = 60;
+        private readonly int MAX_MINUTE_INTERVAL = 45;
         private ulong _channelId;
 
-        public PokemonHandlingService(DiscordSocketClient discord, IServiceProvider provider, IConfiguration config)
+        public PokemonHandlingService(DiscordSocketClient discord, IServiceProvider provider, PokemonController pokeController, UserController userController, IConfiguration config)
         {
             _discord = discord;
             _provider = provider;
-            _cache = provider.GetRequiredService<PokeCache>();
-            _pokeController = provider.GetRequiredService<PokemonController>();
-            _userController = provider.GetRequiredService<UserController>();
+            _pokeController = pokeController;
+            _userController = userController;
             _channelId = config.GetValue<ulong>("AppSettings:ChannelId");
 
             _discord.Ready += SendPokemonAppearance;
@@ -47,28 +45,23 @@ namespace PokeBot.Services
         {
             Random rand = new Random();
             var minutesUntilAppearance = rand.Next(MIN_MINUTE_INTERVAL, MAX_MINUTE_INTERVAL);
-            int dueTime = 1000 * 60 * 5; // initial 5 minutes
-            int period = 1000 * 60 * minutesUntilAppearance;
-            System.Console.WriteLine($"Initial DueTime: {5} \nInitial Period: {minutesUntilAppearance}");
-            _timer = new System.Threading.Timer(DisplayPokemon, null, dueTime, period);
+            int dueTime = 1000 * 60 * 10; // initial 10 minutes
+            int initialPeriod = 1000 * 60 * minutesUntilAppearance;
+            _timer = new System.Threading.Timer(DisplayPokemon, null, dueTime, initialPeriod);
             await Task.CompletedTask;
         }
 
         private async void DisplayPokemon(object state)
         {
             Random rand = new Random();
-            
             var newMinutes = rand.Next(MIN_MINUTE_INTERVAL, MAX_MINUTE_INTERVAL + 1);
             var newPeriod = 1000 * 60 * newMinutes;
-
-            System.Console.WriteLine($"New Period: {newPeriod / (60*1000)}");
-            _timer.Change(newPeriod , newPeriod);
+            _timer.Change(newPeriod, newPeriod);
             Console.WriteLine($"Logging next Pokemon in {newMinutes}...");
 
             var channel = _discord.GetChannel(_channelId) as ISocketMessageChannel;
 
-            var pokemon = await _cache.GetPokemon();
-
+            var pokemon = await _pokeController.GetRandomPokemonData();
             var cwp = _provider.GetRequiredService<CurrentWanderingPokemon>();
             cwp.SetPokemon(pokemon);
             cwp.SetIsCaptured(false);
@@ -78,7 +71,7 @@ namespace PokeBot.Services
             await channel.SendMessageAsync(embed: embeddedMessage);
         }
 
-        private Embed CreateEmbeddedMessage(PokemonForReturnDto pokemon)
+        private Embed CreateEmbeddedMessage(PokemonDataForReturnDto pokemon)
         {
             var upperRule = "═════════════════╗";
             var lowerRule = "═════════════════╝";
@@ -87,7 +80,7 @@ namespace PokeBot.Services
                 .WithAuthor(_discord.CurrentUser)
                 .WithTitle("A Pokemon Wanders Through this Channel...")
                 .WithDescription($"{upperRule} \nA wild `{pokemon.Name}` appears!\n{lowerRule} \n\n Type `!catch` to capture it!")
-                .WithImageUrl(pokemon.Url)
+                .WithImageUrl(pokemon.BastionUrl)
                 .WithFooter(footer => footer.Text = "Appeared ")
                 .WithCurrentTimestamp()
                 .Build();

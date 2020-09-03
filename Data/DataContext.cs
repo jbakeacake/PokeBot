@@ -21,5 +21,10 @@ namespace PokeBot.Data
 
         public DbSet<User> Users_Tbl { get; set; }
         public DbSet<Pokemon> Pokemon_Tbl { get; set; }
+        public DbSet<PokemonData> PokeData_Tbl { get; set; }
+        public DbSet<MoveData> MoveData_Tbl { get; set; }
+        public DbSet<MoveLink> MoveLink_Tbl { get; set; }
+        public DbSet<PokeType> PokeType_Tbl { get; set; }
+        public DbSet<PokeBattleData> PokeBattleData_Tbl { get; set; }
     }
 }

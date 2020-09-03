@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using Discord;
@@ -10,8 +11,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PokeBot.Controllers;
 using PokeBot.Data;
+using PokeBot.Helpers;
 using PokeBot.Services;
-using PokeBot.Services.Helpers;
 
 namespace Pokebot
 {
@@ -25,7 +26,9 @@ namespace Pokebot
 
         public async Task MainAsync(string[] args)
         {
-            _client = new DiscordSocketClient();
+            System.Console.WriteLine("Starting PokeBot Version v0.2");
+            DiscordSocketConfig discordConfig = new DiscordSocketConfig{ MessageCacheSize = 10};
+            _client = new DiscordSocketClient(discordConfig);
             _config = BuildConfig();
 
             var services = ConfigureServices();
@@ -37,13 +40,6 @@ namespace Pokebot
                 {
                     var context = serviceProvider.GetRequiredService<DataContext>();
                     context.Database.Migrate();
-                    await context.Pokemon_Tbl.ForEachAsync(x => {
-                        if(String.IsNullOrEmpty(x.Url))
-                        {
-                            x.Url = $"https://pokeres.bastionbot.org/images/pokemon/{x.PokeId}.png";
-                            System.Console.WriteLine($"Updated to {x.Url}");
-                        }
-                    });
                     await context.SaveChangesAsync();
                 }
                 catch (Exception ex)
@@ -54,6 +50,7 @@ namespace Pokebot
 
             services.GetRequiredService<LogService>();
             services.GetRequiredService<PokemonHandlingService>().Initialize(services);
+            services.GetRequiredService<PokeBattleHandlingService>().Initialize(services);
             await services.GetRequiredService<CommandHandlingService>().InitializeAsync(services);
             await _client.LoginAsync(TokenType.Bot, _config.GetSection("AppSettings:Token").Value);
             await _client.StartAsync();
@@ -64,17 +61,17 @@ namespace Pokebot
         private IServiceProvider ConfigureServices()
             => new ServiceCollection()
                 .AddSingleton(_client)
-                .AddSingleton<PokeCache>()
                 .AddSingleton<CurrentWanderingPokemon>()
                 .AddSingleton<CommandService>()
                 .AddSingleton<CommandHandlingService>()
                 .AddSingleton<PokemonHandlingService>()
+                .AddSingleton<PokeBattleHandlingService>()
                 .AddSingleton(_config)
-                .AddAutoMapper(typeof(PokeBotRepository).Assembly)
+                .AddAutoMapper(typeof(PokeRepository).Assembly)
                 .AddLogging()
                 .AddSingleton<LogService>()
                 .AddDbContext<DataContext>(x => x.UseSqlite(_config.GetConnectionString("DefaultConnection")))
-                .AddScoped<IPokeBotRepository, PokeBotRepository>()
+                .AddScoped<IPokeRepository, PokeRepository>()
                 .AddScoped<UserController>()
                 .AddScoped<PokemonController>()
                 .BuildServiceProvider();

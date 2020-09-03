@@ -3,3 +3,4 @@ bin
 .vscode
 appsettings.json
 Procfile
+*.db
