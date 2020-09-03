@@ -22,7 +22,7 @@ namespace PokeBot.Services
         private UserController _userController;
         private System.Threading.Timer _timer;
         private readonly int MIN_MINUTE_INTERVAL = 1;
-        private readonly int MAX_MINUTE_INTERVAL = 2;
+        private readonly int MAX_MINUTE_INTERVAL = 45;
         private ulong _channelId;
 
         public PokemonHandlingService(DiscordSocketClient discord, IServiceProvider provider, PokemonController pokeController, UserController userController, IConfiguration config)
@@ -45,8 +45,7 @@ namespace PokeBot.Services
         {
             Random rand = new Random();
             var minutesUntilAppearance = rand.Next(MIN_MINUTE_INTERVAL, MAX_MINUTE_INTERVAL);
-            // int dueTime = 1000 * 60 * 10; // initial 10 minutes
-            int dueTime = 1000 * 10;
+            int dueTime = 1000 * 60 * 10; // initial 10 minutes
             int initialPeriod = 1000 * 60 * minutesUntilAppearance;
             _timer = new System.Threading.Timer(DisplayPokemon, null, dueTime, initialPeriod);
             await Task.CompletedTask;

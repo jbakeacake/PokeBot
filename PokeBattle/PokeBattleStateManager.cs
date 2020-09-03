@@ -55,7 +55,6 @@ namespace PokeBot.PokeBattle
             {
                 case PokeBattleStates.GAME_START:
                     {
-                        System.Console.WriteLine("GAME START");
                         doGameStart();
                         break;
                     }
@@ -73,13 +72,11 @@ namespace PokeBot.PokeBattle
                     }
                 case PokeBattleStates.PLAYER_ONE_WIN:
                     {
-                        System.Console.WriteLine("PLAYER ONE WIN");
                         doPlayerWin(_playerOne, _playerTwo);
                         return "";
                     }
                 case PokeBattleStates.PLAYER_TWO_WIN:
                     {
-                        System.Console.WriteLine("PLAYER TWO WIN");
                         doPlayerWin(_playerTwo, _playerOne);
                         return "";
                     }
@@ -138,7 +135,6 @@ namespace PokeBot.PokeBattle
         }
         private string CreateEffectLogMessage(Move move, PokeEntity attacker, PokeEntity defender)
         {
-            System.Console.WriteLine($"{move.Name} | {move.TargetsOther}");
             if (move.StatChangeName == "none") return "";
             var logMessage = "";
             if (move.TargetsOther)
@@ -151,11 +147,11 @@ namespace PokeBot.PokeBattle
             }
             if (move.StatChangeValue > 0)
             {
-                logMessage += "rose!";
+                logMessage += "rose!\n";
             }
             else
             {
-                logMessage += "fell!";
+                logMessage += "fell!\n";
             }
 
             return logMessage;

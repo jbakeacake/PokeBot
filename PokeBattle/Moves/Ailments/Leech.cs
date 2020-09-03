@@ -4,7 +4,7 @@ namespace PokeBot.PokeBattle.Moves.Ailments
 {
     public class Leech : Ailment
     {
-        public readonly int MAX_TURNS;
+        public readonly int MAX_TURNS = 4;
         private int TurnCounter { get; set; }
         public Leech(
             string name,
@@ -30,7 +30,7 @@ namespace PokeBot.PokeBattle.Moves.Ailments
 
         public float healthLeeched(ICombative receiver)
         {
-            float damageDealt = receiver.GetStats().MaxHP * (0.125f);
+            float damageDealt = receiver.GetStats().MaxHP * (0.10f);
             return damageDealt;
         }
 

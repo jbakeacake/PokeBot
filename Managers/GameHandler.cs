@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
@@ -53,9 +54,10 @@ namespace PokeBot.Managers
         public async Task NotifyPlayerOfTurn(ulong discordId)
         {
             var message = await _discord.GetUser(discordId).SendMessageAsync("YOUR TURN");
-            foreach (var key in MoveSetEmojiMapUtil.GetMoveSetEmojiMap.Keys)
+            var keys = MoveSetEmojiMapUtil.GetMoveSetEmojiMap.Keys.ToArray();
+            foreach (var key in keys)
             {
-                await message.AddReactionAsync(key);
+                await message.AddReactionAsync(key).ConfigureAwait(false);
             }
         }
 
@@ -120,8 +122,14 @@ namespace PokeBot.Managers
         public async Task SendPokemonListToPlayer(ulong discordId)
         {
             var userForReturn = await _userController.GetUserByDiscordId(discordId);
-            var pokeListMessage = EmbeddedMessageUtil.CreateChoosePokemonMessage(_discord.CurrentUser, userForReturn);
-            await SendPlayerMessage(pokeListMessage, discordId);
+            var listOfCollections = PokeCollectionUtil.SlicePokeCollection((List<PokemonForReturnDto>)userForReturn.PokeCollection, 20);
+            string message = "```🍚 Type `!choose #` where '#' is the pokemon's corresponding Id number.```";
+            foreach (var collection in listOfCollections)
+            {
+                message += PokeCollectionUtil.ChunkToString(collection);
+                await SendPlayerMessage(message, discordId);
+                message = "";
+            }
         }
 
         public async Task SendOpponentWaitingOnPlayer(ulong discordId, PokemonForReturnDto chosenPokemon, string thumbnailUrl)
@@ -161,7 +169,7 @@ namespace PokeBot.Managers
             var message = "```\n";
             message += game.LogMessage;
             message += "```";
-            
+
             await SendPlayerMessage(message, game.PlayerOne.DiscordId);
             await SendPlayerMessage(message, game.PlayerTwo.DiscordId);
         }
@@ -172,7 +180,7 @@ namespace PokeBot.Managers
             return _games[battleTokenId].isGameReady();
         }
 
-        public bool isPlayerInBattle(ulong discordId)
+        public bool isPlayerBusy(ulong discordId)
         {
             return _battlingPlayers.Contains(discordId);
         }
@@ -198,8 +206,8 @@ namespace PokeBot.Managers
 
         private void RemovePlayerFromPendingSet(ulong discordId)
         {
-            if(!_pendingPlayers.Contains(discordId)) return;
-            
+            if (!_pendingPlayers.Contains(discordId)) return;
+
             _pendingPlayers.Remove(discordId);
         }
 

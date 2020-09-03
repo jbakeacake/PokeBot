@@ -62,7 +62,8 @@ namespace PokeBot.Helpers
             {
                 var basePokeData = await context.PokeData_Tbl.Include(p => p.MoveLinks).FirstOrDefaultAsync(x => x.PokeId == pokemon.PokeId);
                 SetStats(pokemon, basePokeData);
-                SetRandomMoveIds(pokemon, basePokeData);
+                SetRandomMoveIds(context, pokemon, basePokeData);
+                pokemon.Type = basePokeData.Type;
                 pokemon.Level = 1.0f;
                 pokemon.Base_Experience = basePokeData.Base_Experience;
                 System.Console.WriteLine($"Assigning to {pokemon.Name}");
@@ -81,18 +82,19 @@ namespace PokeBot.Helpers
             pokemon.Speed = GetRandomStat(data.Speed);
         }
 
-        private async static void SetRandomMoveIds(Pokemon pokemon, PokemonData data)
+        private async static void SetRandomMoveIds(DataContext context, Pokemon pokemon, PokemonData data)
         {
             int[] arrOfMoveIds = new int[4];
 
             Random rand = new Random();
-            var pokeData = await _context.PokeData_Tbl.Include(x => x.MoveLinks).AsQueryable().FirstOrDefaultAsync(x => x.PokeId == pokemon.PokeId);
+            var pokeData = await context.PokeData_Tbl.Include(x => x.MoveLinks).AsQueryable().FirstOrDefaultAsync(x => x.PokeId == pokemon.PokeId);
             var moveCount = pokeData.MoveLinks.Count();
-            int skips = rand.Next(1, moveCount+1);
+            int skips = rand.Next(1, moveCount-1);
             for(int i = 0; i < arrOfMoveIds.Length; i++)
             {
-                arrOfMoveIds[i] = pokeData.MoveLinks.Skip(skips).Take(1).First().MoveId;
-                skips = rand.Next(1, moveCount+1);
+                if(pokeData.MoveLinks.Count() == 0) throw new Exception("EMPTY MOVE LINK FROM POKE DATA");
+                arrOfMoveIds[i] = pokeData.MoveLinks.Skip(skips).Take(1).FirstOrDefault().MoveId;
+                skips = rand.Next(1, moveCount-1);
             }
 
             pokemon.MoveId_One = arrOfMoveIds[0];

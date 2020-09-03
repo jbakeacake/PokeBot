@@ -161,10 +161,18 @@ namespace PokeBot.PokeBattle.Entities
         private int CalculateDamage(ICombative defender, Move move)
         {
             var modifier = GetDamageModifier(defender, move);
-            float stageMultiplier = isSpecialAttack(move.Type) ? this.Stats.Skills["special-attack"].StageMultiplier : this.Stats.Skills["attack"].StageMultiplier;
+            float attackerStageMultiplier = isSpecialAttack(move.Type) ? this.Stats.Skills["special-attack"].StageMultiplier 
+                : this.Stats.Skills["attack"].StageMultiplier;
+            float defenderStageMultiplier = isSpecialAttack(move.Type) ? defender.GetStats().Skills["special-defense"].StageMultiplier 
+                : defender.GetStats().Skills["defense"].StageMultiplier;
+
             string attackSkill = isSpecialAttack(move.Type) ? "special-attack" : "attack";
             string defenseSkill = isSpecialAttack(move.Type) ? "special-defense" : "defense";
-            var numerator = (((2 * Stats.Level) / 5) + 2) * move.Power * (this.Stats.Skills[attackSkill].Value / defender.GetStats().Skills[defenseSkill].Value) * modifier * stageMultiplier;
+
+            var A = this.Stats.Skills[attackSkill].Value * attackerStageMultiplier;
+            var D = defender.GetStats().Skills[defenseSkill].Value * defenderStageMultiplier;
+            
+            var numerator = (((2 * Stats.Level) / 5) + 2) * move.Power * (A / D) * modifier;
             var denominator = 50;
 
             var damage = ((numerator / denominator) + 2) * modifier;
@@ -175,14 +183,21 @@ namespace PokeBot.PokeBattle.Entities
         private float GetDamageModifier(ICombative defender, Move move)
         {
             float modifier = 1f;
+            Random rand = new Random();
+            float random = ((float)rand.Next(85, 100)) / 100f;
+            float STAB = move.Type == this.PokeType.Name ? 1.5f : 1.0f;
+            float typeEffective = 1.0f;
             if (defender.isDoubleDamageFrom(move.Type))
             {
-                modifier = 2.0f;
+                typeEffective = 2.0f;
             }
             else if (defender.isHalfDamageTo(move.Type))
             {
-                modifier = 0.5f;
+                typeEffective = 0.5f;
             }
+
+            modifier *= (random * STAB * typeEffective);
+
             return modifier;
         }
 
@@ -198,7 +213,6 @@ namespace PokeBot.PokeBattle.Entities
 
         public bool isDead()
         {
-            System.Console.WriteLine($"{Name}: {Stats.HP} / {Stats.MaxHP}");
             return Stats.HP <= 0;
         }
 
@@ -224,12 +238,11 @@ namespace PokeBot.PokeBattle.Entities
             var defenderEvasionMultiplier = this.Stats.Skills["evasion"].StageMultiplier;
             var attackerAccuracyMultiplier = attacker.Stats.Skills["accuracy"].StageMultiplier;
             float adjustedStages = defenderEvasionMultiplier - attackerAccuracyMultiplier;
-            System.Console.WriteLine($"Adjusted Stages : {defenderEvasionMultiplier} - {attackerAccuracyMultiplier}");
             float threshold = (move.Accuracy * adjustedStages);
+            if(threshold >= 75) threshold = 75;
             //Select a random number 'r' from 1 to 255 (inclusive) and compare it to 'threshold' to determine if move hits
             Random rand = new Random();
             float r = rand.Next(1, 101);
-            System.Console.WriteLine($"ATTACK ROLL: r: {r} <= T: {threshold}");
             return r <= threshold;
         }
 
@@ -240,7 +253,7 @@ namespace PokeBot.PokeBattle.Entities
 
             Random rand = new Random();
             float r = rand.Next(101);
-            System.Console.WriteLine($"EFFECT ROLL: r: {r} <= T: {threshold}");
+            System.Console.WriteLine($"EFFECT: {move.StatChangeName} : {move.StatChangeValue}");
             return r <= threshold;
         }
         public void ReceiveAilment(Ailment ailment)
@@ -248,7 +261,6 @@ namespace PokeBot.PokeBattle.Entities
             if (CurrentAilments.ContainsKey(ailment.Name)
                 || !isAilmentApplied(ailment)) return;
 
-            System.Console.WriteLine($"{Name} was afflicted with {ailment.Name}");
             CurrentAilments.Add(ailment.Name, ailment);
         }
         public string TriggerAilments(ICombative attacker)
@@ -258,13 +270,29 @@ namespace PokeBot.PokeBattle.Entities
             foreach (var ailment in CurrentAilments.Values)
             {
                 ailment.ApplyAilment(this);
-                if (ailment.GetType().Equals(typeof(Leech)))
+                if(CurrentAilments.ContainsKey(ailment.Name))
+                    logMessage += $"|{Name} was afflicted by {ailment.Name}! \n";
+
+                if (ailment.Name.Equals("leech-seed"))
                 {
+                    System.Console.WriteLine("BINGO");
                     var healthLeeched = ((Leech)ailment).healthLeeched(this);
                     attacker.Heal((int)healthLeeched);
                 }
-                if(CurrentAilments.ContainsKey(ailment.Name))
-                    logMessage += $"|{Name} was afflicted by {ailment.Name}! \n";
+                else if (ailment.Name.Equals("confusion"))
+                {
+                    logMessage += $"|{Name} is confused!";
+                    var confusionDamage = ((Confusion)ailment).GetDamage(this);
+                    if(((Confusion)ailment).isTargetOther(PokeType.Name))
+                    {
+                        attacker.TakeDamage((int)confusionDamage);
+                    }
+                    else
+                    {
+                        logMessage += $"|{Name} hurt itself in confusion!";
+                        this.TakeDamage((int)confusionDamage);
+                    }
+                }
             }
             return logMessage;
         }
@@ -275,9 +303,11 @@ namespace PokeBot.PokeBattle.Entities
         }
         private bool isAilmentApplied(Ailment ailment)
         {
+            if(ailment.AilmentChance == 0) return true;
+            System.Console.WriteLine(ailment.Name);
             Random rand = new Random();
             int r = rand.Next(1, 101);
-            System.Console.WriteLine($"r: {r} < T: {ailment.AilmentChance}");
+            System.Console.WriteLine($"AILMENT {ailment.Name} - r: {r} < T: {ailment.AilmentChance}");
             return r < (ailment.AilmentChance);
         }
 

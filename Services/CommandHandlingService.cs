@@ -18,7 +18,7 @@ namespace PokeBot.Services
             _discord = discord;
             _commands = commands;
             _provider = provider;
-
+            
             _discord.MessageReceived += MessageReceived;
         }
 

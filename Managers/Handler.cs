@@ -15,7 +15,7 @@ namespace PokeBot.Managers
         {
             var message = await _discord.GetUser(discordId).SendMessageAsync(content);
             return message;
-            }
+        }
 
         public async Task<IUserMessage> SendPlayerMessage(Embed embeddedContent, ulong discordId)
         {

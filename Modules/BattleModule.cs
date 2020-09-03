@@ -14,6 +14,7 @@ using PokeBot.Managers;
 using PokeBot.PokeBattle.Entities;
 using System.Linq;
 using PokeBot.PokeBattle.Moves;
+using System.Threading;
 
 namespace PokeBot.Modules
 {
@@ -31,13 +32,13 @@ namespace PokeBot.Modules
             _gameHandler = pokeBattleHandlingService._handler;
         }
 
-        [Command("cancel")]
+        [Command("cancel", RunMode = RunMode.Async)]
         public async Task CancelDuel()
         {
             var user = Context.Message.Author;
             var userFromTable = await _userController.GetUserByDiscordId(user.Id);
             var playersInvolved = _gameHandler.GetInvitiationGroupByPlayerId(user.Id);
-
+            System.Console.WriteLine($"Player one: {playersInvolved.Item1}|Player Two: {playersInvolved.Item2}");
             //Remove if the players are pending
             RemovePlayerFromBusyLists(_gameHandler._pendingPlayers, playersInvolved.Item1);
             RemovePlayerFromBusyLists(_gameHandler._pendingPlayers, playersInvolved.Item2);
@@ -50,14 +51,16 @@ namespace PokeBot.Modules
                 var game = _gameHandler._games[userFromTable.BattleTokenId];
                 UserForUpdateDto userWithCleanedToken = new UserForUpdateDto(Guid.Empty);
                 await _userController.UpdateUser(game.PlayerOne.DiscordId, userWithCleanedToken);
-                await _userController.UpdateUser(game.PlayerTwo.DiscordId, userWithCleanedToken);
+                await _userController.UpdateUser(game.PlayerTwo.DiscordId, userWithCleanedToken); 
+                await _pokemonController.RemovePokeBattle(userFromTable.BattleTokenId);
                 _gameHandler._games.Remove(userFromTable.BattleTokenId);
             }
+
+            await user.SendMessageAsync("Game/Invite Cancelled.");
         }
 
         private void RemovePlayerFromBusyLists(HashSet<ulong> busyList, ulong discordId)
         {
-            System.Console.WriteLine("Trying to remove player from busy set");
             if(busyList.Contains(discordId))
             {
                 System.Console.WriteLine($"{discordId} removed from busy set.");
@@ -69,23 +72,29 @@ namespace PokeBot.Modules
         public async Task Duel(SocketUser receiver)
         {
             SocketUser sender = Context.Message.Author;
+            if(receiver.IsBot) return;
+            if(sender.Id == receiver.Id) return;
+            
             System.Console.WriteLine("Sending invite...");
             await _gameHandler.SendInviteToPlayer(sender, receiver);
         }
 
-        [Command("choose")]
+        [Command("choose", RunMode = RunMode.Async)]
         public async Task Choose(int pokemonId)
         {
             var user = Context.Message.Author;
+            var userFromRepo = await _userController.GetUserByDiscordId(user.Id);
             var battleTokenId = (await _userController.GetUserByDiscordId(user.Id)).BattleTokenId;
 
-            if (_gameHandler.isPlayerInBattle(user.Id)) return;
+            if (!userFromRepo.PokeCollection.Any(x => x.Id == pokemonId)) return;
+            if (_gameHandler.isPlayerBusy(user.Id)) return;
             if (battleTokenId == Guid.Empty) return;
             if(!_gameHandler._games.ContainsKey(battleTokenId)) return;
 
 
             var game = _gameHandler._games[battleTokenId];
             var player = game.GetPlayer(user.Id);
+
             var pokemon = await _pokemonController.GetPokemonFromUserInventory(pokemonId);
             var pokemonData = await _pokemonController.GetPokemonData(pokemon.PokeId);
             var pokeType = await _pokemonController.GetPokeType(pokemon.Type);

@@ -30,9 +30,10 @@ namespace PokeBot.Modules
             _pokemonController = pokemonController;
             _provider = provider;
         }
-        [Command("catch")]
+        [Command("catch", RunMode = RunMode.Async)]
         public async Task Catch()
         {
+
             var cwp = _provider.GetRequiredService<CurrentWanderingPokemon>();
             if (cwp._isCaptured)
             {
@@ -51,7 +52,7 @@ namespace PokeBot.Modules
             await ReplyAsync($":medal: Congratulations, {user.Username}! You've successfully caught a `{cwp._pokemon.Name}`.\n\nType `!inventory` to see it in your inventory!");
         }
 
-        [Command("inventory")]
+        [Command("inventory", RunMode = RunMode.Async)]
         public async Task Inventory()
         {
             var user = Context.Message.Author;
@@ -63,15 +64,11 @@ namespace PokeBot.Modules
             }
 
             var userData = await _userController.GetUserByDiscordId(user.Id);
-            var uniqueCount = userData.PokeCollection.Select(x => x.Name).Distinct().Count();
-            var message = $":globe_with_meridians:` HELLO, {user.Username.ToUpper()}. WELCOME TO YOUR POKEMON STORAGE UNIT. \nBELOW YOU CAN FIND A LIST OF ALL THE POKEMON YOU'VE CAUGHT...`\n\n";
-            message += $":ballot_box:`POKE STORAGE | Unique Pokemon Found: {uniqueCount} / 151`\n";
-            message += InventoryToString(userData);
-
-            var res = await ReplyAsync(message);
+            var listOfCollections = PokeCollectionUtil.SlicePokeCollection((List<PokemonForReturnDto>)userData.PokeCollection, 20);
+            await SendUserInventoryList(listOfCollections, userData, user.Username);
         }
 
-        [Command("detail")]
+        [Command("detail", RunMode = RunMode.Async)]
         public async Task Detail(int id)
         {
             var user = Context.Message.Author;
@@ -84,27 +81,28 @@ namespace PokeBot.Modules
 
             var userData = await _userController.GetUserByDiscordId(user.Id);
 
-            if(!userData.PokeCollection.Any(x => x.Id == id)) return;
+            if (!userData.PokeCollection.Any(x => x.Id == id)) return;
 
             var pokemonForReturn = userData.PokeCollection.FirstOrDefault(x => x.Id == id);
             var pokeTypeForReturn = await _pokemonController.GetPokeType(pokemonForReturn.Type);
             var moves = await GetMovesFromIds(pokemonForReturn.MoveIds);
             var pokemon = new PokeEntity(id, pokemonForReturn, pokeTypeForReturn, moves);
-        
+
             var embeddedMessage = EmbeddedMessageUtil.CreatePokemonDetailEmbed(Context.Client.CurrentUser, pokemon);
             await user.SendMessageAsync(embed: embeddedMessage);
         }
 
-        private string InventoryToString(UserForReturnDto userData)
+        private async Task SendUserInventoryList(List<List<PokemonForReturnDto>> listOfCollections, UserForReturnDto userData, string username)
         {
-            var message = "```";
-            foreach (var pokemon in userData.PokeCollection.OrderBy(x => x.Name))
+            var uniqueCount = userData.PokeCollection.Select(x => x.Name).Distinct().Count();
+            var message = $":globe_with_meridians:` HELLO, {username.ToUpper()}. WELCOME TO YOUR POKEMON STORAGE UNIT. \nBELOW YOU CAN FIND A LIST OF ALL THE POKEMON YOU'VE CAUGHT...`\n\n";
+            message += $":ballot_box:`POKE STORAGE | Unique Pokemon Found: {uniqueCount} / 151`\n";
+            foreach (var collection in listOfCollections)
             {
-                message += $"◽ {pokemon.Id} | {pokemon.Name.ToUpper()} | Lv. {pokemon.Level}\n";
+                message += PokeCollectionUtil.ChunkToString(collection);
+                await _discord.GetUser(userData.DiscordId).SendMessageAsync(message);
+                message = "";
             }
-
-            message += "```";
-            return message;
         }
 
         private async Task RegisterUser(SocketUser user)
@@ -146,11 +144,16 @@ namespace PokeBot.Modules
             int[] moveIds = new int[4];
             Random rand = new Random();
             var moveCount = moveLinks.Count();
-            int skips = rand.Next(1, moveCount+1);
-            for(int i = 0; i < moveIds.Length; i++)
+            int skips = 0;
+            if (moveCount > 1)
+            {
+                skips = rand.Next(1, moveCount - 1);
+            }
+
+            for (int i = 0; i < moveIds.Length; i++)
             {
                 moveIds[i] = moveLinks.Skip(skips).Take(1).First().MoveId;
-                skips = rand.Next(1, moveCount+1);
+                skips = moveCount > 1 ? rand.Next(1, moveCount - 1) : 0;
             }
 
             return moveIds;

@@ -12,8 +12,6 @@ namespace PokeBot.Controllers
     public class PokemonController
     {
         private readonly int ID_RANGE = 151;
-        private readonly string PokeApiUrl = "https://pokeapi.co/api/v2/pokemon/";
-        private readonly string PokeBastionBotApiUrl = "https://pokeres.bastionbot.org/images/pokemon/";
         private readonly IPokeRepository _repo;
         private readonly IMapper _mapper;
         public PokemonController(IPokeRepository repo, IMapper mapper)

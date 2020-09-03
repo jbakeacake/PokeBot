@@ -11,25 +11,6 @@ namespace PokeBot.Utils
 {
     public static class EmbeddedMessageUtil
     {
-        public static Embed CreateChoosePokemonMessage(SocketSelfUser bot, UserForReturnDto user)
-        {
-            string message = "Type `!choose #` where '#' is the pokemon's corresponding Id number.\n\n```╦\n║ Id • Name • Lvl\n╫────────────────────────\n";
-            foreach (var pokemon in user.PokeCollection)
-            {
-                message += ($"║ {pokemon.Id} • {pokemon.Name} • {pokemon.Level}\n╫────────────────────────\n");
-            }
-            message += "╩```";
-
-            var embeddedMessage = new EmbedBuilder()
-                .WithAuthor(bot)
-                .WithTitle("▼ Choose your pokemon!")
-                .WithDescription(message)
-                .WithFooter(footer => footer.Text = "Sent ")
-                .WithCurrentTimestamp()
-                .Build();
-
-            return embeddedMessage;
-        }
         public static Embed CreateInvitationMessage(SocketSelfUser self, SocketUser sender, SocketUser receiver)
         {
             var embeddedMessage = new EmbedBuilder()
@@ -200,7 +181,8 @@ namespace PokeBot.Utils
                 .WithAuthor(self)
                 .WithColor(Color.Red)
                 .WithTitle($"🎴 POKÉDEX")
-                .WithDescription($"▼**{pokemon.Name.ToUpper()}**\n{pokemonStats}\n\n ►► Moves ◄◄ \n 1.) {pokemon.Moves[0]}\n2.) {pokemon.Moves[1]}\n3.) {pokemon.Moves[2]}\n4.) {pokemon.Moves[3]}")
+                .WithThumbnailUrl(pokemon.FrontSpriteUrl)
+                .WithDescription($"▼**{pokemon.Name.ToUpper()}**\n{pokemonStats}\n\n ►► Moves ◄◄ \n 1.) {pokemon.Moves[0].Name}\n2.) {pokemon.Moves[1].Name}\n3.) {pokemon.Moves[2].Name}\n4.) {pokemon.Moves[3].Name}")
                 .WithFooter(footer => footer.Text = "Detailed at ")
                 .WithCurrentTimestamp()
                 .Build();

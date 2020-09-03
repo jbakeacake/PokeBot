@@ -26,7 +26,9 @@ namespace Pokebot
 
         public async Task MainAsync(string[] args)
         {
-            _client = new DiscordSocketClient();
+            System.Console.WriteLine("Starting PokeBot Version v0.2");
+            DiscordSocketConfig discordConfig = new DiscordSocketConfig{ MessageCacheSize = 10};
+            _client = new DiscordSocketClient(discordConfig);
             _config = BuildConfig();
 
             var services = ConfigureServices();
